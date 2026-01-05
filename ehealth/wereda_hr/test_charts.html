@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chart Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        .chart-container {
+            width: 400px;
+            height: 300px;
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chart Test</h1>
+    
+    <div class="chart-container">
+        <h3>Gender Chart</h3>
+        <canvas id="genderChart"></canvas>
+    </div>
+    
+    <div class="chart-container">
+        <h3>Department Chart</h3>
+        <canvas id="departmentChart"></canvas>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Testing charts...');
+            
+            // Test gender chart
+            setTimeout(() => {
+                if (typeof Chart !== 'undefined') {
+                    console.log('Chart.js loaded');
+                    
+                    // Gender Chart
+                    const genderCtx = document.getElementById('genderChart').getContext('2d');
+                    new Chart(genderCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Male', 'Female'],
+                            datasets: [{
+                                data: [15, 12],
+                                backgroundColor: ['#4cb5ae', '#ff7e5f'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                title: { display: true, text: 'Gender Distribution' }
+                            }
+                        }
+                    });
+                    
+                    // Department Chart
+                    const deptCtx = document.getElementById('departmentChart').getContext('2d');
+                    new Chart(deptCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Medical', 'Admin', 'Technical'],
+                            datasets: [{
+                                label: 'Employees',
+                                data: [12, 8, 5],
+                                backgroundColor: '#4cb5ae'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                title: { display: true, text: 'Department Distribution' }
+                            }
+                        }
+                    });
+                    
+                    console.log('Test charts created');
+                } else {
+                    console.error('Chart.js not loaded');
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html>
