@@ -11,6 +11,7 @@ $offset = ($page - 1) * $limit;
 $search = isset($_GET['search']) ? $_GET['search'] : '';
 $department = isset($_GET['department']) ? $_GET['department'] : '';
 $status = isset($_GET['status']) ? $_GET['status'] : '';
+$kebele = isset($_GET['kebele']) ? $_GET['kebele'] : '';
 
 try {
     $conn = getDBConnection();
@@ -38,6 +39,12 @@ try {
         $types .= "s";
     }
 
+    if ($kebele) {
+        $query .= " AND (working_kebele = ? OR kebele = ?)";
+        array_push($params, $kebele, $kebele);
+        $types .= "ss";
+    }
+
     // Get Total Count for pagination
     $countQuery = str_replace("SELECT *", "SELECT COUNT(*) as total", $query);
     $stmtCount = $conn->prepare($countQuery);
@@ -61,13 +68,25 @@ try {
         $employees[] = $row;
     }
     
+    // Get Summary Stats (Overall, not just filtered)
+    $stmtStats = $conn->prepare("SELECT 
+        COUNT(*) as total,
+        COUNT(CASE WHEN status = 'active' THEN 1 END) as active,
+        COUNT(CASE WHEN status = 'on-leave' THEN 1 END) as leave_count,
+        COUNT(CASE WHEN status = 'inactive' THEN 1 END) as inactive
+        FROM employees WHERE woreda LIKE ?");
+    $stmtStats->bind_param("s", $params[0]);
+    $stmtStats->execute();
+    $stats = $stmtStats->get_result()->fetch_assoc();
+
     echo json_encode([
         'success' => true,
         'employees' => $employees,
         'total' => $totalRows,
         'page' => $page,
         'limit' => $limit,
-        'total_pages' => ceil($totalRows / $limit)
+        'total_pages' => ceil($totalRows / $limit),
+        'stats' => $stats
     ]);
     
 } catch (Exception $e) {

@@ -6,9 +6,8 @@ $user_kebele = $_SESSION['kebele'];
 include dirname(__DIR__) . '/db.php';
 $conn = getDBConnection();
 
-$stmt = $conn->prepare("SELECT department_assigned, COUNT(*) as count FROM employees WHERE kebele LIKE ? GROUP BY department_assigned");
-$kebele_param = "%$user_kebele%";
-$stmt->bind_param("s", $kebele_param);
+$stmt = $conn->prepare("SELECT department_assigned, COUNT(*) as count FROM employees WHERE working_kebele = ? GROUP BY department_assigned");
+$stmt->bind_param("s", $user_kebele);
 $stmt->execute();
 $result = $stmt->get_result();
 

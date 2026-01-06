@@ -14,7 +14,7 @@
     --light-gray: #e9ecef;
     --sidebar-width: 250px;
     --sidebar-collapsed: 70px;
-    --header-height: 70px;
+    --header-height: 56px;
     --mobile-drawer-width: 280px;
 }
 
@@ -30,6 +30,57 @@ body {
     background-color: #f5f7fa;
     color: var(--dark);
     overflow-x: hidden;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 126, 95, 0.4);
+    }
+
+    70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(255, 126, 95, 0);
+    }
+
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 126, 95, 0);
+    }
+}
+
+.hr-stat-card,
+.hr-action-btn,
+.chart-container-premium,
+.leave-request-card,
+.job-card,
+.training-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hr-stat-card:hover,
+.hr-action-btn:hover,
+.leave-request-card:hover,
+.job-card:hover,
+.training-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+}
+
+.notif-pulse {
+    animation: pulse 2s infinite;
 }
 
 /* Layout */
@@ -242,13 +293,15 @@ body {
 
 /* Header */
 .header {
-    background-color: white;
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
     height: var(--header-height);
-    padding: 0 20px;
+    padding: 0 25px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.03);
     position: sticky;
     top: 0;
     z-index: 99;
@@ -290,16 +343,17 @@ body {
 }
 
 .user-avatar {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    background-color: var(--secondary);
+    background: linear-gradient(135deg, var(--secondary), #3aa099);
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    font-weight: 600;
-    font-size: 1.2rem;
+    font-weight: 700;
+    font-size: 1rem;
+    box-shadow: 0 2px 8px rgba(76, 181, 174, 0.3);
 }
 
 .user-info {

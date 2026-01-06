@@ -23,129 +23,15 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
         <div class="mobile-overlay" id="mobileOverlay"></div>
         
         <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <a href="#" class="logo">
-                    <i class="fas fa-heartbeat"></i>
-                    <span class="logo-text">HealthFirst HR</span>
-                </a>
-                <button class="toggle-sidebar" id="toggleSidebar">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-            </div>
-            
-            <nav class="sidebar-menu">
-                <ul>
-                    <li class="menu-item active">
-                        <a href="kebele_hr_dashboard.php">
-                            <i class="fas fa-tachometer-alt"></i>
-                            <span class="menu-text">HR Dashboard</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="hr-employees.html">
-                            <i class="fas fa-users"></i>
-                            <span class="menu-text">Employees</span>
-                            <span class="menu-badge">142</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="hr-attendance.html">
-                            <i class="fas fa-calendar-check"></i>
-                            <span class="menu-text">Attendance</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="hr-leave.html">
-                            <i class="fas fa-umbrella-beach"></i>
-                            <span class="menu-text">Leave Management</span>
-                            <span class="menu-badge">8</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="hr-recruitment.html">
-                            <i class="fas fa-user-plus"></i>
-                            <span class="menu-text">Recruitment</span>
-                            <span class="menu-badge">5</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="hr-training.html">
-                            <i class="fas fa-graduation-cap"></i>
-                            <span class="menu-text">Training</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="hr-payroll.html">
-                            <i class="fas fa-money-check-alt"></i>
-                            <span class="menu-text">Payroll</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="hr-reports.html">
-                            <i class="fas fa-chart-bar"></i>
-                            <span class="menu-text">HR Reports</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="hr-settings.html">
-                            <i class="fas fa-cog"></i>
-                            <span class="menu-text">HR Settings</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        </aside>
+        <?php include 'sidebar.php'; ?>
 
         <!-- Main Content -->
         <main class="main-content">
             <!-- Header -->
-            <header class="header">
-                <div class="header-left">
-                    <button class="mobile-menu-btn" id="mobileMenuBtn">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <h1 class="page-title">Human Resources Management</h1>
-                </div>
-                
-                <div class="header-actions">
-                    <div class="user-profile" id="userProfile">
-                        <div class="user-avatar"><?php echo strtoupper(substr($_SESSION['user_name'], 0, 2)); ?></div>
-                        <div class="user-info">
-                            <span class="user-name"><?php echo htmlspecialchars($_SESSION['user_name']); ?></span>
-                            <span class="user-role"><?php
-                                $role_names = [
-                                    'admin' => 'Administrator',
-                                    'zone_health_officer' => 'Zone Health Officer',
-                                    'zone_hr' => 'Zone HR Officer',
-                                    'wereda_health_officer' => 'Wereda Health Officer',
-                                    'wereda_hr' => 'Wereda HR Officer',
-                                    'kebele_health_officer' => 'Kebele Health Officer',
-                                    'kebele_hr' => 'Kebele HR Officer'
-                                ];
-                                echo $role_names[$_SESSION['role']] ?? $_SESSION['role'];
-                            ?></span>
-                        </div>
-                        <i class="fas fa-chevron-down"></i>
-
-                        <div class="dropdown-menu" id="userDropdown">
-                            <a href="#" class="dropdown-item">
-                                <i class="fas fa-user"></i> My Profile
-                            </a>
-                            <a href="#" class="dropdown-item">
-                                <i class="fas fa-cog"></i> Account Settings
-                            </a>
-                            <a href="#" class="dropdown-item">
-                                <i class="fas fa-question-circle"></i> Help & Support
-                            </a>
-                            <div class="dropdown-divider"></div>
-                            <a href="#" class="dropdown-item">
-                                <i class="fas fa-sign-out-alt"></i> Logout
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            <?php 
+                $page_title = "Kebele HR Dashboard";
+                include 'navbar.php'; 
+            ?>
 
             <!-- HR Dashboard -->
             <div class="hr-dashboard">
@@ -714,6 +600,48 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
     </div>
 
 
+    <!-- Add Employee Modal -->
+    <div class="modal" id="addEmployeeModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeEmployeeModal">&times;</span>
+            <h2 class="modal-title">Add New Employee</h2>
+            <form id="addEmployeeForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>First Name</label>
+                        <input type="text" name="first_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Last Name</label>
+                        <input type="text" name="last_name" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Department</label>
+                        <select name="department" required>
+                            <option value="Medical">Medical</option>
+                            <option value="Administration">Administration</option>
+                            <option value="Technical">Technical</option>
+                            <option value="Support">Support</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Position</label>
+                        <input type="text" name="position" required>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="submit-btn">Add Employee</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Post Job Modal -->
     <div class="modal" id="postJobModal">
         <div class="modal-content">
@@ -783,35 +711,57 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
     </div>
 
     <script>
-        // DOM Elements
-        const sidebar = document.getElementById('sidebar');
-        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-        const mobileOverlay = document.getElementById('mobileOverlay');
-        const toggleSidebarBtn = document.getElementById('toggleSidebar');
-
-        // Toggle Sidebar
-        if(toggleSidebarBtn) {
-            toggleSidebarBtn.addEventListener('click', () => {
-                sidebar.classList.toggle('collapsed');
-            });
-        }
-
-        if(mobileMenuBtn) {
-            mobileMenuBtn.addEventListener('click', () => {
-                sidebar.classList.add('mobile-open');
-                mobileOverlay.classList.add('active');
-            });
-        }
-
-        if(mobileOverlay) {
-             mobileOverlay.addEventListener('click', () => {
-                sidebar.classList.remove('mobile-open');
-                mobileOverlay.classList.remove('active');
-            });
-        }
-
         document.addEventListener('DOMContentLoaded', function() {
-            // Set default dates
+            // Modal Logic
+            const addModal = document.getElementById('addEmployeeModal');
+            const addBtn = document.getElementById('addEmployeeBtn');
+            const addBtn2 = document.getElementById('addEmployeeBtn2');
+            const closeAdd = document.getElementById('closeEmployeeModal');
+            const addForm = document.getElementById('addEmployeeForm');
+
+            function openModal() { addModal.style.display = 'block'; }
+            function closeModal() { addModal.style.display = 'none'; }
+
+            if(addBtn) addBtn.addEventListener('click', openModal);
+            if(addBtn2) addBtn2.addEventListener('click', openModal);
+            if(closeAdd) closeAdd.addEventListener('click', closeModal);
+            window.addEventListener('click', (e) => { if(e.target == addModal) closeModal(); });
+
+            if(addForm) {
+                addForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const formData = new FormData(addForm);
+                    // Use helper from scripts.js if available, else plain fetch
+                    if (typeof addEmployee === 'function') {
+                        addEmployee(formData).then(res => {
+                            if(res.success) {
+                                closeModal();
+                                addForm.reset();
+                                loadEmployees();
+                            } else {
+                                alert(res.message);
+                            }
+                        });
+                    } else {
+                        // Fallback inline
+                        fetch('employee_actions.php?action=add', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                            body: new URLSearchParams(formData)
+                        }).then(r=>r.json()).then(res=>{
+                            if(res.success) {
+                                closeModal();
+                                addForm.reset();
+                                loadEmployees();
+                            } else {
+                                alert(res.message);
+                            }
+                        });
+                    }
+                });
+            }
+
+            // Set default dates logic...
             const today = new Date().toISOString().split('T')[0];
             const joinDate = document.getElementById('joinDate');
             if(joinDate) joinDate.value = today;
@@ -877,6 +827,10 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
                             const statusClass = status.toLowerCase();
                             
                             const row = document.createElement('tr');
+                            // Store ID for delegation
+                            row.dataset.employeeId = empId; 
+                            // If empId is N/A, we can't really edit/delete, but displaying is fine.
+                            
                             row.innerHTML = `
                                 <td>
                                     <div class="employee-info">
@@ -971,5 +925,6 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
             });
         }
     </script>
+    <script src="scripts.js"></script>
 </body>
 </html>

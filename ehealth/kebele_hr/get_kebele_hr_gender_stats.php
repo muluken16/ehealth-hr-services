@@ -10,9 +10,8 @@ include dirname(__DIR__) . '/db.php';
 $conn = getDBConnection();
 
 // Get gender distribution for employees in this kebele
-$stmt = $conn->prepare("SELECT gender, COUNT(*) as count FROM employees WHERE kebele LIKE ? GROUP BY gender");
-$kebele_param = "%$user_kebele%";
-$stmt->bind_param("s", $kebele_param);
+$stmt = $conn->prepare("SELECT gender, COUNT(*) as count FROM employees WHERE working_kebele = ? GROUP BY gender");
+$stmt->bind_param("s", $user_kebele);
 $stmt->execute();
 $result = $stmt->get_result();
 

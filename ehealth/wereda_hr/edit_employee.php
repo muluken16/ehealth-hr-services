@@ -25,11 +25,12 @@ try {
         throw new Exception("Database connection failed: " . $conn->connect_error);
     }
 
-    // Get employee ID
-    $employee_id = isset($_POST['employee_id']) ? intval($_POST['employee_id']) : 0;
+    // Get database primary key ID
+    $db_id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+    $employee_id = isset($_POST['employee_id']) ? $_POST['employee_id'] : 'Unknown';
 
-    if ($employee_id <= 0) {
-        echo json_encode(['success' => false, 'message' => 'Invalid employee ID']);
+    if ($db_id <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Invalid record ID']);
         $conn->close();
         exit();
     }
@@ -226,8 +227,8 @@ try {
         exit();
     }
 
-    // Add employee_id to params for WHERE clause
-    $params[] = $employee_id;
+    // Add ID to params for WHERE clause
+    $params[] = $db_id;
     $types .= "i";
 
     $sql = "UPDATE employees SET " . implode(', ', $update_fields) . " WHERE id = ?";

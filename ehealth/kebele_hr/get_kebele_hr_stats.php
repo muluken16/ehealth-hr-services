@@ -9,9 +9,8 @@ if (!isset($_SESSION['kebele'])) {
 $user_kebele = $_SESSION['kebele'];
 
 // Get total employees for this kebele
-$stmt = $conn->prepare("SELECT COUNT(*) as total FROM employees WHERE kebele LIKE ?");
-$kebele_param = "%$user_kebele%";
-$stmt->bind_param("s", $kebele_param);
+$stmt = $conn->prepare("SELECT COUNT(*) as total FROM employees WHERE working_kebele = ?");
+$stmt->bind_param("s", $user_kebele);
 $stmt->execute();
 $total_employees = $stmt->get_result()->fetch_assoc()['total'];
 
@@ -22,14 +21,14 @@ $result = $conn->query("SELECT COUNT(*) as total FROM job_postings WHERE status 
 $open_positions = $result->fetch_assoc()['total'];
 
 // Get employees on leave
-$stmt = $conn->prepare("SELECT COUNT(*) as total FROM employees WHERE status = 'on-leave' AND kebele LIKE ?");
-$stmt->bind_param("s", $kebele_param);
+$stmt = $conn->prepare("SELECT COUNT(*) as total FROM employees WHERE status = 'on-leave' AND working_kebele = ?");
+$stmt->bind_param("s", $user_kebele);
 $stmt->execute();
 $on_leave = $stmt->get_result()->fetch_assoc()['total'];
 
 // Get pending leave requests
-$stmt = $conn->prepare("SELECT COUNT(*) as total FROM leave_requests lr JOIN employees e ON lr.employee_id = e.employee_id WHERE lr.status = 'pending' AND e.kebele LIKE ?");
-$stmt->bind_param("s", $kebele_param);
+$stmt = $conn->prepare("SELECT COUNT(*) as total FROM leave_requests lr JOIN employees e ON lr.employee_id = e.employee_id WHERE lr.status = 'pending' AND e.working_kebele = ?");
+$stmt->bind_param("s", $user_kebele);
 $stmt->execute();
 $pending_leave = $stmt->get_result()->fetch_assoc()['total'];
 

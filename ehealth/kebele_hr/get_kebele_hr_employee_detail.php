@@ -28,18 +28,19 @@ if (!$employee_id) {
 }
 
 try {
-    // Get current user
+    // Get current user and kebele
     $current_user = $_SESSION['user_name'] ?? 'Unknown';
+    $user_kebele = $_SESSION['kebele'] ?? 'Kebele 1';
     
-    // Get employee details - only if created by current user
-    $sql = "SELECT * FROM employees WHERE (id = ? OR employee_id = ?) AND created_by = ?";
+    // Get employee details - if assigned to user's kebele
+    $sql = "SELECT * FROM employees WHERE (id = ? OR employee_id = ?) AND working_kebele = ?";
     $stmt = $conn->prepare($sql);
     
     if (!$stmt) {
         throw new Exception("Prepare failed: " . $conn->error);
     }
     
-    $stmt->bind_param("sss", $employee_id, $employee_id, $current_user);
+    $stmt->bind_param("sss", $employee_id, $employee_id, $user_kebele);
     $stmt->execute();
     $result = $stmt->get_result();
     

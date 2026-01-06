@@ -1,3 +1,6 @@
+<?php
+session_start();
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,104 +12,15 @@
 </head>
 <body>
     <div class="hr-container">
-        <!-- Mobile Overlay -->
-        <div class="mobile-overlay" id="mobileOverlay"></div>
-
         <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <a href="#" class="logo">
-                    <i class="fas fa-heartbeat"></i>
-                    <span class="logo-text">HealthFirst HR</span>
-                </a>
-                <button class="toggle-sidebar" id="toggleSidebar">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-            </div>
-
-            <nav class="sidebar-menu">
-                <ul>
-                    <li class="menu-item">
-                        <a href="kebele_hr_dashboard.php">
-                            <i class="fas fa-tachometer-alt"></i>
-                            <span class="menu-text">HR Dashboard</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="hr-employees.html">
-                            <i class="fas fa-users"></i>
-                            <span class="menu-text">Employees</span>
-                            <span class="menu-badge">142</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="hr-attendance.html">
-                            <i class="fas fa-calendar-check"></i>
-                            <span class="menu-text">Attendance</span>
-                        </a>
-                    </li>
-                    <li class="menu-item active">
-                        <a href="hr-leave.html">
-                            <i class="fas fa-umbrella-beach"></i>
-                            <span class="menu-text">Leave Management</span>
-                            <span class="menu-badge">8</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="hr-recruitment.html">
-                            <i class="fas fa-user-plus"></i>
-                            <span class="menu-text">Recruitment</span>
-                            <span class="menu-badge">5</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="hr-training.html">
-                            <i class="fas fa-graduation-cap"></i>
-                            <span class="menu-text">Training</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="hr-payroll.html">
-                            <i class="fas fa-money-check-alt"></i>
-                            <span class="menu-text">Payroll</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="hr-reports.html">
-                            <i class="fas fa-chart-bar"></i>
-                            <span class="menu-text">HR Reports</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="hr-settings.html">
-                            <i class="fas fa-cog"></i>
-                            <span class="menu-text">HR Settings</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        </aside>
+        <?php include 'sidebar.php'; ?>
 
         <!-- Main Content -->
         <main class="main-content">
-            <!-- Header -->
-            <header class="header">
-                <div class="header-left">
-                    <button class="mobile-menu-btn" id="mobileMenuBtn">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <h1 class="page-title">Leave Management</h1>
-                </div>
-
-                <div class="header-actions">
-                    <button class="btn-primary" onclick="window.location.href='submit_leave_request.php'">
-                        <i class="fas fa-plus"></i> New Leave Request
-                    </button>
-                    <button class="btn-secondary" onclick="window.location.href='leave_history.php'">
-                        <i class="fas fa-history"></i> Leave History
-                    </button>
-                </div>
-            </header>
+            <?php 
+                $page_title = "Leave Management";
+                include 'navbar.php'; 
+            ?>
 
             <!-- Content -->
             <div class="content">
@@ -255,22 +169,7 @@
             return str.charAt(0).toUpperCase() + str.slice(1);
         }
 
-        // Sidebar toggle
-        document.getElementById('toggleSidebar').addEventListener('click', () => {
-            document.getElementById('sidebar').classList.toggle('collapsed');
-        });
-
-        document.getElementById('mobileMenuBtn').addEventListener('click', () => {
-            document.getElementById('sidebar').classList.add('mobile-open');
-            document.getElementById('mobileOverlay').classList.add('active');
-            document.body.style.overflow = 'hidden';
-        });
-
-        document.getElementById('mobileOverlay').addEventListener('click', () => {
-            document.getElementById('sidebar').classList.remove('mobile-open');
-            document.getElementById('mobileOverlay').classList.remove('active');
-            document.body.style.overflow = 'auto';
-        });
     </script>
+    <script src="scripts.js"></script>
 </body>
 </html>
