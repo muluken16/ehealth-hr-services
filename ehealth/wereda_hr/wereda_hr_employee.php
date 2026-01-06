@@ -786,7 +786,7 @@ try {
                 const initials = (emp.first_name?.charAt(0) || '') + (emp.last_name?.charAt(0) || '');
                 return `
                 <tr class="clickable-row" onclick="viewEmployeeDetails('${emp.employee_id}')">
-                    <td>
+                    <td data-label="Employee">
                         <div style="display:flex; align-items:center; gap:10px;">
                             <div class="user-avatar" style="width:32px;height:32px;background:var(--secondary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;">
                                 ${initials}
@@ -797,17 +797,17 @@ try {
                             </div>
                         </div>
                     </td>
-                    <td style="font-family: monospace; font-weight: 600;">${emp.employee_id}</td>
-                    <td><span style="font-weight: 600; color: #1e293b;">${emp.working_kebele || emp.kebele || 'N/A'}</span></td>
-                    <td><span class="department-badge ${emp.department_assigned?.toLowerCase() || 'medical'}">${emp.department_assigned || 'Not Assigned'}</span></td>
-                    <td>${emp.position || 'Employee'}</td>
-                    <td>${new Date(emp.join_date).toLocaleDateString('en-GB')}</td>
-                    <td>
+                    <td data-label="ID" style="font-family: monospace; font-weight: 600;">${emp.employee_id}</td>
+                    <td data-label="Kebele"><span style="font-weight: 600; color: #1e293b;">${emp.working_kebele || emp.kebele || 'N/A'}</span></td>
+                    <td data-label="Department"><span class="department-badge ${emp.department_assigned?.toLowerCase() || 'medical'}">${emp.department_assigned || 'Not Assigned'}</span></td>
+                    <td data-label="Position">${emp.position || 'Employee'}</td>
+                    <td data-label="Join Date">${new Date(emp.join_date).toLocaleDateString('en-GB')}</td>
+                    <td data-label="Status">
                         <span class="status-badge ${emp.status || 'active'}">
                             ${(emp.status || 'Active').toUpperCase()}
                         </span>
                     </td>
-                    <td>
+                    <td data-label="Actions">
                         <div class="action-buttons">
                             <button class="action-btn view" onclick="event.stopPropagation(); viewEmployeeDetails('${emp.employee_id}')" title="View Details"><i class="fas fa-eye"></i></button>
                             <button class="action-btn edit" onclick="event.stopPropagation(); openEditModal('${emp.employee_id}')" title="Edit Profile"><i class="fas fa-edit"></i></button>

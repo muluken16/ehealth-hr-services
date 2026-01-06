@@ -292,7 +292,7 @@ function time_elapsed($datetime) {
                         <i class="fas fa-clipboard-list"></i>
                         <span>Leave Requests</span>
                         <?php if($pendingLeave > 0): ?>
-                        <span id="pendingLeaveCount" style="font-size: 0.8rem; margin-top: 5px; color: var(--accent);"><?php echo $pendingLeave; ?> pending</span>
+                        <span class="action-badge"><?php echo $pendingLeave; ?></span>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -370,8 +370,8 @@ function time_elapsed($datetime) {
                                             $status = ucfirst(str_replace('-', ' ', $employee['status']));
                                             $initials = substr($employee['first_name'], 0, 1) . substr($employee['last_name'], 0, 1);
                                             ?>
-                                            <tr>
-                                                <td>
+                                             <tr>
+                                                <td data-label="Employee">
                                                     <div class="employee-info">
                                                         <div class="employee-avatar"><?php echo $initials; ?></div>
                                                         <div>
@@ -380,12 +380,12 @@ function time_elapsed($datetime) {
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td><?php echo htmlspecialchars($employee['employee_id']); ?></td>
-                                                <td><span class="department-badge <?php echo $deptClass; ?>"><?php echo htmlspecialchars($dept); ?></span></td>
-                                                <td><?php echo htmlspecialchars($employee['position']); ?></td>
-                                                <td><?php echo $joinDate; ?></td>
-                                                <td><span class="status-badge <?php echo $statusClass; ?>"><?php echo $status; ?></span></td>
-                                                <td>
+                                                <td data-label="Employee ID"><?php echo htmlspecialchars($employee['employee_id']); ?></td>
+                                                <td data-label="Department"><span class="department-badge <?php echo $deptClass; ?>"><?php echo htmlspecialchars($dept); ?></span></td>
+                                                <td data-label="Position"><?php echo htmlspecialchars($employee['position']); ?></td>
+                                                <td data-label="Join Date"><?php echo $joinDate; ?></td>
+                                                <td data-label="Status"><span class="status-badge <?php echo $statusClass; ?>"><?php echo $status; ?></span></td>
+                                                <td data-label="Actions">
                                                     <div class="action-buttons">
                                                         <button class="action-btn view" onclick="window.location.href='wereda_hr_employee.php?id=<?php echo $employee['id']; ?>'"><i class="fas fa-eye"></i></button>
                                                         <button class="action-btn edit" onclick="window.location.href='wereda_hr_employee.php?id=<?php echo $employee['id']; ?>&edit=true'"><i class="fas fa-edit"></i></button>
