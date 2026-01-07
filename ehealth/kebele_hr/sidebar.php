@@ -28,8 +28,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <span class="menu-badge" id="sidebarEmpBadge">0</span>
                 </a>
             </li>
-            <li class="menu-item">
-                <a href="hr-employees.php?register=true" style="color: var(--success);">
+            <li class="menu-item <?php echo $current_page == 'add_employee.php' ? 'active' : ''; ?>">
+                <a href="add_employee.php" style="color: var(--success);">
                     <i class="fas fa-user-plus"></i>
                     <span class="menu-text">Register New</span>
                 </a>

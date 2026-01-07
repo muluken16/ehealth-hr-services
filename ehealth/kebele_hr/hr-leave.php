@@ -137,11 +137,13 @@ session_start();
                     const card = this.closest('.leave-request-card');
                     const employeeName = card.querySelector('.employee-name').textContent;
                     const leaveId = this.getAttribute('data-leave-id');
-                    if (confirm(`Reject leave request for ${employeeName}?`)) {
+                    const reason = prompt(`Enter reason for rejecting ${employeeName}'s leave:`);
+                    
+                    if (reason !== null) {
                         fetch('reject_leave.php', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ leave_id: leaveId })
+                            body: JSON.stringify({ leave_id: leaveId, reason: reason })
                         })
                         .then(response => response.json())
                         .then(data => {

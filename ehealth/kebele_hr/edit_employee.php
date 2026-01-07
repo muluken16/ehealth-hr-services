@@ -211,10 +211,20 @@ if (!$employee) {
             <div class="content">
                 <div class="edit-layout">
 
-        <!-- Sidebar -->
         <div class="profile-card">
-            <?php $initials = substr($employee['first_name'], 0, 1) . substr($employee['last_name'], 0, 1); ?>
-            <div class="profile-avatar"><?php echo strtoupper($initials); ?></div>
+            <div style="position: relative; display: inline-block;">
+                <?php 
+                    $initials = substr($employee['first_name'], 0, 1) . substr($employee['last_name'], 0, 1); 
+                    if (!empty($employee['photo'])) {
+                        echo '<img src="../uploads/employees/'.$employee['photo'].'" class="profile-avatar" style="object-fit:cover; border: 4px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">';
+                    } else {
+                        echo '<div class="profile-avatar" style="border: 4px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">'.strtoupper($initials).'</div>';
+                    }
+                ?>
+                <label for="photoInput" style="position: absolute; bottom: 10px; right: 0; background: var(--secondary); color: white; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <i class="fas fa-camera"></i>
+                </label>
+            </div>
             <div class="profile-name"><?php echo $employee['first_name'] . ' ' . $employee['last_name']; ?></div>
             <div class="profile-role"><?php echo $employee['position']; ?> • <?php echo $employee['employee_id']; ?></div>
             
@@ -233,8 +243,9 @@ if (!$employee) {
 
         <!-- Form Area -->
         <div class="form-content">
-            <form id="editEmployeeForm">
+            <form id="editEmployeeForm" enctype="multipart/form-data">
                 <input type="hidden" name="employee_id" value="<?php echo $employee['employee_id']; ?>">
+                <input type="file" name="photo" id="photoInput" accept="image/*" style="display: none;" onchange="previewProfile(this)">
                 
                 <!-- Personal -->
                 <div id="personal">
@@ -356,6 +367,33 @@ if (!$employee) {
                             <label>Account Number</label>
                             <input type="text" name="bank_account" class="form-control-edit" value="<?php echo $employee['bank_account']; ?>">
                         </div>
+                        <div class="form-group">
+                            <label>Credit Status</label>
+                            <select name="credit_status" class="form-control-edit" onchange="toggleCreditFile(this)">
+                                <option value="good" <?php echo ($employee['credit_status'] ?? 'good') == 'good' ? 'selected' : ''; ?>>Good / No Debt</option>
+                                <option value="active" <?php echo ($employee['credit_status'] ?? '') == 'active' ? 'selected' : ''; ?>>Active Credit</option>
+                                <option value="bad" <?php echo ($employee['credit_status'] ?? '') == 'bad' ? 'selected' : ''; ?>>Bad / Default</option>
+                            </select>
+                        </div>
+                        <div id="creditFileGroup" class="form-group" style="<?php echo ($employee['credit_status'] ?? '') == 'active' ? '' : 'display: none;'; ?> grid-column: 1/-1;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                <div>
+                                    <label>Credit Status File (Attached)</label>
+                                    <div style="display: flex; gap: 10px; align-items: center;">
+                                        <?php if(!empty($employee['loan_file'])): ?>
+                                            <a href="../uploads/employees/<?php echo $employee['loan_file']; ?>" target="_blank" class="scan-btn" style="padding: 8px 12px; font-size: 0.8rem;">
+                                                <i class="fas fa-file-pdf"></i> View Credit File
+                                            </a>
+                                        <?php endif; ?>
+                                        <input type="file" name="loan_file" accept=".pdf,image/*" class="form-control-edit" style="padding: 9px;">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label>Credit Information / Details</label>
+                                    <textarea name="credit_details" class="form-control-edit" placeholder="Enter details about the active credit..." style="height: 70px;"><?php echo $employee['credit_details'] ?? ''; ?></textarea>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -363,18 +401,99 @@ if (!$employee) {
                 <div id="warranty">
                     <div class="section-title"><i class="fas fa-shield-halved"></i> Warranty & Legal</div>
                     <div class="form-grid">
-                        <div class="form-group">
-                            <label>Guarantor Name</label>
-                            <input type="text" name="person_name" class="form-control-edit" value="<?php echo $employee['person_name']; ?>">
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                             <label>Warranty / Guarantor Required?</label>
+                             <select name="warranty_status" class="form-control-edit" onchange="toggleWarrantyFields(this)">
+                                 <option value="yes" <?php echo ($employee['warranty_status'] ?? 'yes') == 'yes' ? 'selected' : ''; ?>>Yes - Guarantor Required</option>
+                                 <option value="no" <?php echo ($employee['warranty_status'] ?? 'yes') == 'no' ? 'selected' : ''; ?>>No - Not Required</option>
+                             </select>
                         </div>
-                        <div class="form-group">
-                            <label>Guarantor Phone</label>
-                            <input type="tel" name="phone" class="form-control-edit" value="<?php echo $employee['phone']; ?>">
+
+                        <div id="warrantyFields" class="form-grid" style="grid-column: 1 / -1; display: <?php echo ($employee['warranty_status'] ?? 'yes') == 'yes' ? 'grid' : 'none'; ?>; margin-bottom: 0;">
+                            <div class="form-group">
+                                <label>Guarantor Name</label>
+                                <input type="text" name="person_name" class="form-control-edit" value="<?php echo $employee['person_name']; ?>">
+                            </div>
+                            <div class="form-group">
+                                <label>Guarantor Phone</label>
+                                <input type="tel" name="phone" class="form-control-edit" value="<?php echo $employee['phone']; ?>">
+                            </div>
+                            <div class="form-group">
+                                <label>Guarantor Woreda</label>
+                                <input type="text" name="warranty_woreda" class="form-control-edit" value="<?php echo $employee['warranty_woreda'] ?? ''; ?>">
+                            </div>
+                            <div class="form-group">
+                                <label>Guarantor Kebele</label>
+                                <input type="text" name="warranty_kebele" class="form-control-edit" value="<?php echo $employee['warranty_kebele'] ?? ''; ?>">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>FIN / National ID</label>
+                                <input type="text" name="fin_id" class="form-control-edit" value="<?php echo $employee['fin_id']; ?>" oninput="toggleFinScan(this)">
+                                <div id="finScanGroup" style="margin-top: 10px; <?php echo !empty($employee['fin_id']) ? '' : 'display: none;'; ?>">
+                                    <div style="display: flex; gap: 10px; align-items: center;">
+                                        <?php if(!empty($employee['fin_scan'])): ?>
+                                            <a href="../uploads/employees/<?php echo $employee['fin_scan']; ?>" target="_blank" class="scan-btn" style="padding: 8px 12px; font-size: 0.75rem; min-width: 100px;">
+                                                <i class="fas fa-id-card"></i> View Current
+                                            </a>
+                                        <?php endif; ?>
+                                        <div class="upload-area" onclick="document.getElementById('fin_scan_input').click()" style="padding: 8px; flex: 1; border-style: dashed; background: #f0f7ff; cursor: pointer;">
+                                            <i class="fas fa-upload" style="font-size: 0.8rem;"></i> <span style="font-size: 0.75rem;">Attach/Change Scan</span>
+                                            <input type="file" id="fin_scan_input" name="fin_scan" accept=".pdf,image/*" style="display:none">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>ID Details</label>
+                                <input type="text" name="national_id_details" class="form-control-edit" value="<?php echo $employee['national_id_details'] ?? ''; ?>">
+                            </div>
+                            <div class="form-group">
+                                <label>Warranty Agreement</label>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <?php if(!empty($employee['scan_file'])): ?>
+                                        <a href="../uploads/employees/<?php echo $employee['scan_file']; ?>" target="_blank" class="scan-btn" style="padding: 8px 12px; font-size: 0.8rem;">
+                                            <i class="fas fa-file-contract"></i> View Agreement
+                                        </a>
+                                    <?php endif; ?>
+                                    <input type="file" name="scan_file" class="form-control-edit" style="padding: 9px; flex: 1;">
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label>FIN / National ID</label>
-                            <input type="text" name="fin_id" class="form-control-edit" value="<?php echo $employee['fin_id']; ?>">
+
+                        <div class="form-group" style="grid-column: 1 / -1; margin-top: 20px;">
+                            <div style="font-weight: 600; color: var(--primary); margin-bottom: 15px; border-top: 1px solid #f1f5f9; padding-top: 15px;">Legal & Criminal Status</div>
                         </div>
+                        
+                        <div class="form-group">
+                             <label>Criminal Status</label>
+                             <select name="criminal_status" class="form-control-edit" onchange="toggleCriminalFile(this)">
+                                 <option value="no" <?php echo ($employee['criminal_status'] ?? 'no') == 'no' ? 'selected' : ''; ?>>Clean</option>
+                                 <option value="yes" <?php echo ($employee['criminal_status'] ?? 'no') == 'yes' ? 'selected' : ''; ?>>Has Record</option>
+                             </select>
+                        </div>
+
+                        <div id="criminalFileGroup" class="form-group" style="<?php echo ($employee['criminal_status'] ?? 'no') == 'yes' ? '' : 'display: none;'; ?> grid-column: 1/-1;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                <div>
+                                    <label>Criminal Record File (Photo/Scan)</label>
+                                    <div style="display: flex; gap: 10px; align-items: center;">
+                                        <?php if(!empty($employee['criminal_file'])): ?>
+                                            <a href="../uploads/employees/<?php echo $employee['criminal_file']; ?>" target="_blank" class="scan-btn" style="padding: 8px 12px; font-size: 0.8rem;">
+                                                <i class="fas fa-balance-scale"></i> View File
+                                            </a>
+                                        <?php endif; ?>
+                                        <input type="file" name="criminal_file" accept=".pdf,image/*" class="form-control-edit" style="padding: 9px; flex: 1;">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label>Criminal Record Details</label>
+                                    <textarea name="criminal_record_details" class="form-control-edit" placeholder="Enter details about the record..." style="height: 70px;"><?php echo $employee['criminal_record_details'] ?? ''; ?></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+
                     </div>
                 </div>
 
@@ -430,9 +549,51 @@ if (!$employee) {
                 item.classList.remove('active');
                 if (item.getAttribute('onclick').includes(id)) item.classList.add('active');
             });
-                </div> <!-- .edit-layout -->
-            </div> <!-- .content -->
-        </main>
-    </div> <!-- .hr-container -->
+        }
+
+        function previewProfile(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const avatar = document.querySelector('.profile-avatar');
+                    if (avatar.tagName === 'IMG') {
+                        avatar.src = e.target.result;
+                    } else {
+                        // Replace div with img
+                        const newImg = document.createElement('img');
+                        newImg.src = e.target.result;
+                        newImg.className = 'profile-avatar';
+                        newImg.style.cssText = 'object-fit:cover; border: 4px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.1); width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;';
+                        avatar.replaceWith(newImg);
+                    }
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function toggleCreditFile(select) {
+            const group = document.getElementById('creditFileGroup');
+            if(select.value === 'active') {
+                group.style.display = 'block';
+            } else {
+                group.style.display = 'none';
+            }
+        }
+
+        function toggleFinScan(input) {
+            const group = document.getElementById('finScanGroup');
+            group.style.display = input.value.trim() !== '' ? 'block' : 'none';
+        }
+
+        function toggleCriminalFile(select) {
+            const group = document.getElementById('criminalFileGroup');
+            group.style.display = select.value === 'yes' ? 'block' : 'none';
+        }
+
+        function toggleWarrantyFields(select) {
+            const group = document.getElementById('warrantyFields');
+            group.style.display = select.value === 'yes' ? 'grid' : 'none';
+        }
+    </script>
 </body>
 </html>

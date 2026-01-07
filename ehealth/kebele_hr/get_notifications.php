@@ -11,10 +11,10 @@ try {
     $notifications = [];
 
     // 1. Pending Leave Requests for this Kebele
-    $stmt = $conn->prepare("SELECT e.first_name, e.last_name, e.kebele, lr.leave_type, lr.created_at, lr.id 
+    $stmt = $conn->prepare("SELECT e.first_name, e.last_name, e.working_kebele as kebele, lr.leave_type, lr.created_at, lr.id 
                             FROM leave_requests lr 
                             JOIN employees e ON lr.employee_id = e.employee_id 
-                            WHERE e.kebele = ? AND lr.status = 'pending' 
+                            WHERE e.working_kebele = ? AND lr.status = 'pending' 
                             ORDER BY lr.created_at DESC LIMIT 5");
     $stmt->bind_param("s", $user_kebele);
     $stmt->execute();
@@ -36,7 +36,7 @@ try {
     // 2. Recent Employee Registrations in this Kebele
     $stmt = $conn->prepare("SELECT first_name, last_name, created_at, id 
                             FROM employees 
-                            WHERE kebele = ? 
+                            WHERE working_kebele = ? 
                             ORDER BY created_at DESC LIMIT 5");
     $stmt->bind_param("s", $user_kebele);
     $stmt->execute();

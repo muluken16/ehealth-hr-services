@@ -52,7 +52,7 @@ if (isset($_SESSION['user_id'])) {
             display: flex;
             width: 100%;
             max-width: 950px;
-            height: 600px; /* Decreased from 680px */
+            min-height: 650px; /* Increased height for content */
             background: white;
             border-radius: 32px;
             box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.2);
@@ -115,50 +115,52 @@ if (isset($_SESSION['user_id'])) {
         /* Right Side - Form Section */
         .form-section {
             flex: 1;
-            padding: 40px 60px; /* Reduced vertical padding */
+            padding: 40px 50px; /* Adjusted padding */
             display: flex;
             flex-direction: column;
             justify-content: center;
             background: var(--bg-glass);
             backdrop-filter: blur(15px);
             transition: all 0.5s ease;
+            overflow-y: auto; /* Allow scrolling if content is too tall */
         }
 
         .form-header {
-            margin-bottom: 45px;
+            margin-bottom: 35px; /* Reduced margin */
         }
 
         .form-header h2 {
-            font-size: 2.2rem;
+            font-size: 2rem; /* Slightly smaller */
             color: var(--secondary);
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             font-weight: 700;
         }
 
         .form-header p {
             color: #64748b;
+            font-size: 0.95rem;
         }
 
         .form-group {
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             position: relative;
         }
 
         .form-group label {
             display: block;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 600;
             color: #475569;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .form-group input {
             width: 100%;
-            padding: 14px 16px;
+            padding: 12px 16px;
             padding-left: 45px;
             border: 2px solid #e2e8f0;
             border-radius: 12px;
-            font-size: 1rem;
+            font-size: 0.95rem;
             transition: all 0.3s ease;
             outline: none;
         }
@@ -171,9 +173,10 @@ if (isset($_SESSION['user_id'])) {
         .form-group i {
             position: absolute;
             left: 18px;
-            top: 42px;
+            top: 38px;
             color: #94a3b8;
             transition: color 0.3s;
+            font-size: 0.9rem;
         }
 
         .form-group input:focus + i {
@@ -184,8 +187,8 @@ if (isset($_SESSION['user_id'])) {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
-            font-size: 0.9rem;
+            margin-bottom: 25px;
+            font-size: 0.85rem;
         }
 
         .checkbox-container {
@@ -204,12 +207,12 @@ if (isset($_SESSION['user_id'])) {
 
         .login-btn {
             width: 100%;
-            padding: 16px;
+            padding: 14px;
             background: linear-gradient(135deg, var(--primary), var(--primary-light));
             color: white;
             border: none;
             border-radius: 12px;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -228,10 +231,10 @@ if (isset($_SESSION['user_id'])) {
         }
 
         .message {
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 25px;
-            font-size: 0.95rem;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
             display: none;
             animation: slideDown 0.3s ease;
         }
@@ -257,7 +260,8 @@ if (isset($_SESSION['user_id'])) {
         @media (max-width: 1024px) {
             .login-container {
                 max-width: 900px;
-                height: 650px;
+                min-height: 600px;
+                height: auto;
             }
             .brand-overlay h1 { font-size: 2.8rem; }
             .form-section { padding: 40px; }
@@ -268,7 +272,7 @@ if (isset($_SESSION['user_id'])) {
                 background: #f0f4f8; /* Changed from white to give contrast */
                 overflow-y: auto;
                 height: auto;
-                padding: 40px 15px; /* Added significant top/bottom padding */
+                padding: 40px 20px;
             }
             .login-container {
                 flex-direction: column;
@@ -282,11 +286,11 @@ if (isset($_SESSION['user_id'])) {
             }
             .image-section {
                 flex: none;
-                height: 200px; /* Shorter image for mobile */
+                height: 220px; /* Slightly taller for visual balance */
                 padding: 30px;
                 border-radius: 24px 24px 0 0;
             }
-            .brand-overlay h1 { font-size: 2rem; }
+            .brand-overlay h1 { font-size: 2.2rem; }
             .brand-overlay p { font-size: 1rem; }
             .form-section { 
                 padding: 40px 30px;
@@ -310,17 +314,17 @@ if (isset($_SESSION['user_id'])) {
 
         /* Demo Login Section */
         .demo-section {
-            margin-top: 35px;
-            padding-top: 25px;
+            margin-top: 30px;
+            padding-top: 20px;
             border-top: 1px solid #e2e8f0;
         }
 
         .demo-title {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 1px;
             color: #94a3b8;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             font-weight: 700;
             text-align: center;
         }
@@ -332,7 +336,7 @@ if (isset($_SESSION['user_id'])) {
         }
 
         .demo-chip {
-            padding: 8px 12px;
+            padding: 8px 10px;
             background: #f1f5f9;
             border: 1px solid #e2e8f0;
             border-radius: 8px;
@@ -400,7 +404,7 @@ if (isset($_SESSION['user_id'])) {
             <div class="demo-section">
                 <p class="demo-title">Quick Demo Access</p>
                 <div class="demo-grid">
-                    <div class="demo-chip" onclick="fillLogin('admin@gmail.com', '123456')">Admin</div>
+                    <div class="demo-chip" style="grid-column: span 2;" onclick="fillLogin('admin@gmail.com', '123456')">Administrator</div>
                     <div class="demo-chip" onclick="fillLogin('zone_ho@gmail.com', '123456')">Zone HO</div>
                     <div class="demo-chip" onclick="fillLogin('zone_hr@gmail.com', '123456')">Zone HR</div>
                     <div class="demo-chip" onclick="fillLogin('wereda_ho@gmail.com', '123456')">Wereda HO</div>

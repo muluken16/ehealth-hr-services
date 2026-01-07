@@ -1,83 +1,61 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 session_start();
-
-// Set default user for demo
-$_SESSION['user_name'] = 'Kebele HR Officer';
-$_SESSION['user_id'] = 1;
-$_SESSION['role'] = 'kebele_hr';
-
 header('Content-Type: application/json');
 
-// Create database connection
-$conn = new mysqli("localhost", "root", "", "ehealth");
-if ($conn->connect_error) {
-    echo json_encode(['success' => false, 'message' => 'Database connection failed']);
-    exit();
+if (!isset($_SESSION['user_id'])) {
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $input = json_decode(file_get_contents('php://input'), true);
-    $leave_id = $input['leave_id'] ?? null;
-    
-    if (!$leave_id) {
-        echo json_encode(['success' => false, 'message' => 'Leave ID is required']);
-        exit();
+require_once '../db.php';
+$conn = getDBConnection();
+
+$data = json_decode(file_get_contents('php://input'), true);
+if (!isset($data['leave_id'])) {
+    echo json_encode(['success' => false, 'message' => 'Leave ID required']);
+    exit;
+}
+
+$leave_id = $data['leave_id'];
+$admin_id = $_SESSION['user_id'];
+
+// Start transaction
+$conn->begin_transaction();
+
+try {
+    // 1. Get leave details
+    $stmt = $conn->prepare("SELECT employee_id, leave_type, days_requested FROM leave_requests WHERE id = ?");
+    $stmt->bind_param("i", $leave_id);
+    $stmt->execute();
+    $leave = $stmt->get_result()->fetch_assoc();
+
+    if (!$leave) {
+        throw new Exception("Leave request not found");
     }
-    
-    try {
-        $conn->begin_transaction();
-        
-        // Get leave request details
-        $stmt = $conn->prepare("SELECT lr.*, e.first_name, e.last_name FROM leave_requests lr JOIN employees e ON lr.employee_id = e.employee_id WHERE lr.id = ? AND lr.status = 'pending'");
-        $stmt->bind_param("i", $leave_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        if ($result->num_rows === 0) {
-            throw new Exception("Leave request not found or already processed");
-        }
-        
-        $leave_request = $result->fetch_assoc();
-        $stmt->close();
-        
-        // Update leave request status
-        $user_id = $_SESSION['user_id'];
-        $update_stmt = $conn->prepare("UPDATE leave_requests SET status = 'approved', approved_by = ?, approved_at = CURRENT_TIMESTAMP WHERE id = ?");
-        $update_stmt->bind_param("ii", $user_id, $leave_id);
-        
-        if (!$update_stmt->execute()) {
-            throw new Exception("Failed to approve leave request");
-        }
-        
-        $update_stmt->close();
-        
-        // Update employee status to on-leave if leave starts today or in the past
-        $today = date('Y-m-d');
-        if ($leave_request['start_date'] <= $today) {
-            $emp_update = $conn->prepare("UPDATE employees SET status = 'on-leave' WHERE employee_id = ?");
-            $emp_update->bind_param("s", $leave_request['employee_id']);
-            $emp_update->execute();
-            $emp_update->close();
-        }
-        
-        $conn->commit();
-        
-        echo json_encode([
-            'success' => true, 
-            'message' => 'Leave request approved successfully',
-            'employee_name' => $leave_request['first_name'] . ' ' . $leave_request['last_name'],
-            'leave_type' => $leave_request['leave_type'],
-            'days' => $leave_request['days_requested']
-        ]);
-        
-    } catch (Exception $e) {
-        $conn->rollback();
-        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
-    }
-} else {
-    echo json_encode(['success' => false, 'message' => 'Invalid request method']);
+
+    $emp_id = $leave['employee_id'];
+    $type = $leave['leave_type'];
+    $days = $leave['days_requested'];
+
+    // 2. Update leave request status
+    $stmt = $conn->prepare("UPDATE leave_requests SET status = 'approved', approved_by = ?, approved_at = NOW() WHERE id = ?");
+    $stmt->bind_param("ii", $admin_id, $leave_id);
+    $stmt->execute();
+
+    // 3. Update employee balance and status
+    $balance_col = $type . "_used";
+    $sql = "UPDATE employees SET $balance_col = $balance_col + ?, status = 'on-leave' WHERE employee_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("is", $days, $emp_id);
+    $stmt->execute();
+
+    // Commit
+    $conn->commit();
+    echo json_encode(['success' => true]);
+
+} catch (Exception $e) {
+    $conn->rollback();
+    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
 
 $conn->close();

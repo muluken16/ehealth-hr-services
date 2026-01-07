@@ -13,6 +13,10 @@ $conn = new mysqli($servername, $username, $db_password);
 
 // Check connection
 if ($conn->connect_error) {
+    if (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false || (isset($_SERVER['CONTENT_TYPE']) && strpos($_SERVER['CONTENT_TYPE'], 'application/json') !== false)) {
+        header('Content-Type: application/json');
+        die(json_encode(['success' => false, 'error' => "Connection failed: " . $conn->connect_error, 'db_error' => true]));
+    }
     die("Connection failed: " . $conn->connect_error);
 }
 
@@ -76,6 +80,12 @@ if ($result->num_rows == 0) {
 $result = $conn->query("SHOW COLUMNS FROM users LIKE 'kebele'");
 if ($result->num_rows == 0) {
     $conn->query("ALTER TABLE users ADD COLUMN kebele VARCHAR(50) NULL");
+}
+
+$result = $conn->query("SHOW COLUMNS FROM users LIKE 'employee_id'");
+if ($result->num_rows == 0) {
+    $conn->query("ALTER TABLE users ADD COLUMN employee_id VARCHAR(20) NULL");
+    $conn->query("ALTER TABLE users ADD INDEX idx_employee_id (employee_id)");
 }
 
 // Create login_attempts table
@@ -195,19 +205,34 @@ $sql = "CREATE TABLE IF NOT EXISTS employees (
     language VARCHAR(50),
     other_language VARCHAR(100),
     documents TEXT,
+    working_woreda VARCHAR(50),
+    working_kebele VARCHAR(50),
+    photo VARCHAR(255),
+    criminal_record_details TEXT,
+    national_id_details VARCHAR(255),
+    credit_status VARCHAR(50),
+    credit_details TEXT,
     created_by VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )";
+$conn->query($sql);
 
-if ($conn->query($sql) === TRUE) {
-    // Only output messages if this file is accessed directly (not included)
-    if (basename($_SERVER['SCRIPT_FILENAME']) === 'db.php') {
-        echo "✅ Employees table created successfully.<br>";
-    }
-} else {
-    if (basename($_SERVER['SCRIPT_FILENAME']) === 'db.php') {
-        echo "❌ Error creating employees table: " . $conn->error . "<br>";
+// Auto-patch employees table for new columns
+$new_cols = [
+    'working_woreda' => "VARCHAR(50)",
+    'working_kebele' => "VARCHAR(50)",
+    'photo' => "VARCHAR(255)",
+    'criminal_record_details' => "TEXT",
+    'national_id_details' => "VARCHAR(255)",
+    'credit_status' => "VARCHAR(50)",
+    'credit_details' => "TEXT"
+];
+
+foreach ($new_cols as $col => $definition) {
+    $check = $conn->query("SHOW COLUMNS FROM employees LIKE '$col'");
+    if ($check && $check->num_rows == 0) {
+        $conn->query("ALTER TABLE employees ADD COLUMN $col $definition");
     }
 }
 
@@ -570,6 +595,11 @@ function getDBConnection() {
         return $conn;
     } catch (Exception $e) {
         error_log($e->getMessage());
+        if (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) {
+            header('Content-Type: application/json');
+            http_response_code(500);
+            die(json_encode(['success' => false, 'error' => $e->getMessage(), 'db_error' => true]));
+        }
         if (ini_get('display_errors')) {
             die("<div style='padding: 20px; background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; border-radius: 8px; margin: 20px;'>
                 <strong>System Error:</strong> " . $e->getMessage() . "
@@ -581,5 +611,5 @@ function getDBConnection() {
 }
 
 // Close connection
-$conn->close();
+// $conn->close(); // Removed to prevent closing connection before it's used
 ?>

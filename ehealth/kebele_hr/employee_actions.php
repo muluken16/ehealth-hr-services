@@ -47,13 +47,13 @@ function getPostData() {
         'region' => $_POST['region'] ?? '',
         'zone' => $_POST['zone'] ?? '',
         'woreda' => $_POST['woreda'] ?? '',
-        'kebele' => $_POST['kebele'] ?? '', // This might be overridden by session for the 'location' context, but let's keep it if it refers to residence
+        'kebele' => $_POST['kebele'] ?? '', 
         'education_level' => $_POST['education_level'] ?? '',
         'primary_school' => $_POST['primary_school'] ?? '',
         'secondary_school' => $_POST['secondary_school'] ?? '',
         'college' => $_POST['college'] ?? '',
         'university' => $_POST['university'] ?? '',
-        'department' => $_POST['department'] ?? '', // Academic dept? Or hospital dept? distinct from department_assigned usually
+        'department' => $_POST['department'] ?? '',
         'other_department' => $_POST['other_department'] ?? '',
         'bank_name' => $_POST['bank_name'] ?? '',
         'other_bank_name' => $_POST['other_bank_name'] ?? '',
@@ -68,16 +68,20 @@ function getPostData() {
         'warranty_kebele' => $_POST['warranty_kebele'] ?? '',
         'phone' => $_POST['phone'] ?? '',
         'warranty_type' => $_POST['warranty_type'] ?? '',
-        'criminal_status' => $_POST['criminal_status'] ?? '',
+        'criminal_status' => (($_POST['criminal_status'] ?? 'no') === 'yes') ? 'yes' : 'no',
+        'criminal_record_details' => $_POST['criminal_record_details'] ?? '',
         'fin_id' => $_POST['fin_id'] ?? '',
-        'loan_status' => $_POST['loan_status'] ?? '',
-        'leave_request' => $_POST['leave_request'] ?? '', // Maybe not needed for Add
+        'national_id_details' => $_POST['national_id_details'] ?? '',
+        'credit_status' => $_POST['credit_status'] ?? 'good',
+        'credit_details' => $_POST['credit_details'] ?? '',
+        'loan_status' => (($_POST['credit_status'] ?? '') === 'active') ? 'yes' : 'no',
+        'leave_request' => 'no', // Default for new employees
         'email' => $_POST['email'] ?? '',
         'phone_number' => $_POST['phone_number'] ?? '',
         'department_assigned' => $_POST['department_assigned'] ?? '',
         'position' => $_POST['position'] ?? '',
         'join_date' => $_POST['join_date'] ?? date('Y-m-d'),
-        'salary' => $_POST['salary'] ?? 0,
+        'salary' => $_POST['salary'] ? floatval($_POST['salary']) : 0,
         'employment_type' => $_POST['employment_type'] ?? 'full-time',
         'status' => $_POST['status'] ?? 'active',
         'address' => $_POST['address'] ?? '',
@@ -90,12 +94,11 @@ function getPostData() {
 switch ($action) {
     case 'add':
         $d = getPostData();
-        // Generate a random employee ID if not provided (or auto-increment handled by DB ID, but we need employee_id string)
         $empIdStr = 'EMP-' . strtoupper(substr(md5(time()), 0, 6));
         $session_user = $_SESSION['user_name'] ?? 'System';
-        $session_kebele = $_SESSION['kebele'] ?? 'Kebele 1';
-
+        
         // Handle Files
+        $photo = handleFileUpload($_FILES['photo'] ?? null, 'photo', $empIdStr); // New
         $scan_file = handleFileUpload($_FILES['scan_file'] ?? null, 'scan', $empIdStr);
         $criminal_file = handleFileUpload($_FILES['criminal_file'] ?? null, 'criminal', $empIdStr);
         $fin_scan = handleFileUpload($_FILES['fin_scan'] ?? null, 'fin', $empIdStr);
@@ -107,20 +110,18 @@ switch ($action) {
         if (isset($_FILES['education_files'])) {
             foreach ($_FILES['education_files']['name'] as $i => $name) {
                 if ($_FILES['education_files']['error'][$i] == 0) {
-                   $f = [
-                       'name' => $name,
-                       'type' => $_FILES['education_files']['type'][$i],
-                       'tmp_name' => $_FILES['education_files']['tmp_name'][$i],
-                       'error' => 0,
-                       'size' => $_FILES['education_files']['size'][$i]
-                   ];
-                   $up = handleFileUpload($f, 'edu_'.$i, $empIdStr);
-                   if ($up) $edu_docs[] = $up;
+                    $f = [
+                        'name' => $name,
+                        'type' => $_FILES['education_files']['type'][$i],
+                        'tmp_name' => $_FILES['education_files']['tmp_name'][$i],
+                        'error' => 0,
+                        'size' => $_FILES['education_files']['size'][$i]
+                    ];
+                    $up = handleFileUpload($f, 'edu_'.$i, $empIdStr);
+                    if ($up) $edu_docs[] = $up;
                 }
             }
         }
-        // Encode as JSON if multiple, or string if single? Better stick to JSON for consistency if multiple allowed.
-        // But DB column is TEXT (soon), so JSON string is fine.
         $education_file = !empty($edu_docs) ? json_encode($edu_docs) : '';
 
         // Handle Multiple Employment Contracts
@@ -145,7 +146,6 @@ switch ($action) {
         $documents = [];
         // Handle multi-documents
         if (isset($_FILES['documents'])) {
-            // Basic loop for multiple files
             foreach ($_FILES['documents']['name'] as $i => $name) {
                 if ($_FILES['documents']['error'][$i] == 0) {
                    $f = [
@@ -163,15 +163,13 @@ switch ($action) {
         $documents_json = json_encode($documents);
 
         // INSERT Query with all fields
-        // INSERT Query with all fields
         $working_woreda = $_POST['working_woreda'] ?? '';
         $working_kebele = $_POST['working_kebele'] ?? '';
         
-        // Auto-assign for Kebele HR if empty (and if session has it, though session structure varies)
-        // Assuming session has 'woreda' and 'kebele' for Kebele HR users
         if(empty($working_woreda) && isset($_SESSION['woreda'])) $working_woreda = $_SESSION['woreda'];
         if(empty($working_kebele) && isset($_SESSION['kebele'])) $working_kebele = $_SESSION['kebele'];
 
+        // Added: photo, criminal_record_details, national_id_details, credit_status, guarantor_photo
         $sql = "INSERT INTO employees (
             employee_id, first_name, middle_name, last_name, gender, date_of_birth, religion, citizenship, other_citizenship, region, zone, woreda, kebele, 
             education_level, primary_school, secondary_school, college, university, department, other_department, education_file,
@@ -179,8 +177,9 @@ switch ($action) {
             warranty_status, person_name, warranty_woreda, warranty_kebele, phone, warranty_type, 
             scan_file, criminal_status, criminal_file, fin_id, fin_scan, loan_status, loan_file, leave_request, leave_document, employment_agreement,
             email, phone_number, department_assigned, position, join_date, salary, employment_type, status, address, emergency_contact, 
-            language, other_language, documents, working_woreda, working_kebele, created_by, created_at
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, NOW())";
+            language, other_language, documents, working_woreda, working_kebele, created_by, created_at,
+            photo, criminal_record_details, national_id_details, credit_status, credit_details
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, NOW(), ?, ?, ?, ?, ?)";
         
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
@@ -188,7 +187,8 @@ switch ($action) {
              exit;
         }
 
-        $stmt->bind_param(str_repeat("s", 60), 
+        // Count of types: 60 original 's' + 5 new 's' = 65 's'
+        $stmt->bind_param(str_repeat("s", 65), 
             $empIdStr, $d['first_name'], $d['middle_name'], $d['last_name'], $d['gender'], $d['date_of_birth'], 
             $d['religion'], $d['citizenship'], $d['other_citizenship'], $d['region'], $d['zone'], $d['woreda'], $d['kebele'],
             $d['education_level'], $d['primary_school'], $d['secondary_school'], $d['college'], $d['university'], $d['department'], $d['other_department'], $education_file,
@@ -196,7 +196,8 @@ switch ($action) {
             $d['warranty_status'], $d['person_name'], $d['warranty_woreda'], $d['warranty_kebele'], $d['phone'], $d['warranty_type'],
             $scan_file, $d['criminal_status'], $criminal_file, $d['fin_id'], $fin_scan, $d['loan_status'], $loan_file, $d['leave_request'], $leave_document, $employment_agreement,
             $d['email'], $d['phone_number'], $d['department_assigned'], $d['position'], $d['join_date'], $d['salary'], $d['employment_type'], $d['status'], 
-            $d['address'], $d['emergency_contact'], $d['language'], $d['other_language'], $documents_json, $working_woreda, $working_kebele, $session_user
+            $d['address'], $d['emergency_contact'], $d['language'], $d['other_language'], $documents_json, $working_woreda, $working_kebele, $session_user,
+            $photo, $d['criminal_record_details'], $d['national_id_details'], $d['credit_status'], $d['credit_details']
         );
 
         if ($stmt->execute()) {
@@ -233,8 +234,8 @@ switch ($action) {
             'department', 'other_department', 'bank_name', 'other_bank_name', 'bank_account', 'job_level', 'other_job_level',
             'marital_status', 'other_marital_status', 'warranty_status', 'person_name', 'warranty_woreda', 'warranty_kebele', 
             'phone', 'warranty_type', 'criminal_status', 'loan_status', 'email', 'phone_number', 'department_assigned', 
-            'position', 'join_date', 'salary', 'employment_type', 'status', 'address', 'emergency_contact', 'language', 'other_language'
-            // files handled separately below
+            'position', 'join_date', 'salary', 'employment_type', 'status', 'address', 'emergency_contact', 'language', 'other_language',
+            'credit_status', 'credit_details', 'criminal_record_details', 'national_id_details'
         ];
 
         foreach ($fields as $f) {
@@ -255,7 +256,8 @@ switch ($action) {
             'criminal_file' => 'criminal', 
             'fin_scan' => 'fin', 
             'loan_file' => 'loan', 
-            'leave_document' => 'leave'
+            'leave_document' => 'leave',
+            'photo' => 'photo'
         ];
         
         foreach($file_fields as $post_key => $prefix) {
