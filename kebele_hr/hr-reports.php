@@ -1,0 +1,216 @@
+<?php
+session_start();
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealthFirst | HR Reports</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../style/style.css">
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+</head>
+<body>
+    <div class="hr-container">
+        <!-- Sidebar -->
+        <?php include 'sidebar.php'; ?>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <?php 
+                $page_title = "HR Reports & Analytics";
+                include 'navbar.php'; 
+            ?>
+
+            <!-- Content -->
+            <div class="content">
+                <!-- Charts Section -->
+                <div class="hr-section">
+                    <div class="hr-section-header">
+                        <h2 class="hr-section-title">Employee Analytics</h2>
+                    </div>
+                    <div class="hr-section-body">
+                        <div class="charts-grid">
+                            <div class="chart-card">
+                                <h3>Gender Distribution</h3>
+                                <div id="genderChart" class="chart-container"></div>
+                            </div>
+                            <div class="chart-card">
+                                <h3>Department Distribution</h3>
+                                <div id="departmentChart" class="chart-container"></div>
+                            </div>
+                            <div class="chart-card">
+                                <h3>Employment Status</h3>
+                                <div id="statusChart" class="chart-container"></div>
+                            </div>
+                            <div class="chart-card">
+                                <h3>Leave Requests by Month</h3>
+                                <div id="leaveChart" class="chart-container"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reports Table -->
+                <div class="hr-section">
+                    <div class="hr-section-header">
+                        <h2 class="hr-section-title">Recent Reports</h2>
+                        <div class="hr-section-actions">
+                            <button class="section-action-btn">
+                                <i class="fas fa-plus"></i> Generate New Report
+                            </button>
+                        </div>
+                    </div>
+                    <div class="hr-section-body">
+                        <div class="reports-table" id="reportsTable">
+                            <!-- Reports will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        google.charts.load('current', {'packages':['corechart']});
+
+        // Load charts on page load
+        window.addEventListener('load', function() {
+            // Load gender stats
+            fetch('get_kebele_hr_gender_stats.php')
+                .then(response => response.json())
+                .then(data => {
+                    google.charts.setOnLoadCallback(() => drawGenderChart(data));
+                });
+
+            // Load department stats
+            fetch('get_kebele_hr_department_stats.php')
+                .then(response => response.json())
+                .then(data => {
+                    google.charts.setOnLoadCallback(() => drawDepartmentChart(data));
+                });
+
+            // Load status stats
+            fetch('get_kebele_hr_status_stats.php')
+                .then(response => response.json())
+                .then(data => {
+                    google.charts.setOnLoadCallback(() => drawStatusChart(data));
+                });
+
+            // Load leave stats
+            fetch('get_kebele_hr_leave_stats.php')
+                .then(response => response.json())
+                .then(data => {
+                    google.charts.setOnLoadCallback(() => drawLeaveChart(data));
+                });
+
+            // Load reports
+            fetch('get_kebele_hr_reports.php')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('reportsTable');
+                    container.innerHTML = '';
+
+                    if (data.length > 0) {
+                        const table = document.createElement('table');
+                        table.className = 'data-table';
+                        table.innerHTML = `
+                            <thead>
+                                <tr>
+                                    <th>Report Type</th>
+                                    <th>Generated By</th>
+                                    <th>Generated At</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.map(report => `
+                                    <tr>
+                                        <td>${report.report_type}</td>
+                                        <td>${report.generated_by}</td>
+                                        <td>${new Date(report.generated_at).toLocaleDateString()}</td>
+                                        <td>
+                                            <button class="action-btn">View</button>
+                                            <button class="action-btn">Download</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        `;
+                        container.appendChild(table);
+                    } else {
+                        container.innerHTML = '<p>No reports generated yet.</p>';
+                    }
+                });
+        });
+
+        function drawGenderChart(data) {
+            const chartData = google.visualization.arrayToDataTable([
+                ['Gender', 'Count'],
+                ...data.map(item => [item.gender, parseInt(item.count)])
+            ]);
+
+            const options = {
+                title: 'Employee Gender Distribution',
+                pieHole: 0.4,
+                colors: ['#FF6B6B', '#4ECDC4', '#45B7D1']
+            };
+
+            const chart = new google.visualization.PieChart(document.getElementById('genderChart'));
+            chart.draw(chartData, options);
+        }
+
+        function drawDepartmentChart(data) {
+            const chartData = google.visualization.arrayToDataTable([
+                ['Department', 'Count'],
+                ...data.map(item => [item.department, parseInt(item.count)])
+            ]);
+
+            const options = {
+                title: 'Employee Department Distribution',
+                pieHole: 0.4,
+                colors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57']
+            };
+
+            const chart = new google.visualization.PieChart(document.getElementById('departmentChart'));
+            chart.draw(chartData, options);
+        }
+
+        function drawStatusChart(data) {
+            const chartData = google.visualization.arrayToDataTable([
+                ['Status', 'Count'],
+                ...data.map(item => [item.employment_status, parseInt(item.count)])
+            ]);
+
+            const options = {
+                title: 'Employment Status Distribution',
+                pieHole: 0.4,
+                colors: ['#FF6B6B', '#4ECDC4', '#45B7D1']
+            };
+
+            const chart = new google.visualization.PieChart(document.getElementById('statusChart'));
+            chart.draw(chartData, options);
+        }
+
+        function drawLeaveChart(data) {
+            const chartData = google.visualization.arrayToDataTable([
+                ['Month', 'Leave Requests'],
+                ...data.map(item => [item.month, parseInt(item.count)])
+            ]);
+
+            const options = {
+                title: 'Leave Requests by Month',
+                curveType: 'function',
+                legend: { position: 'bottom' },
+                colors: ['#FF6B6B']
+            };
+
+            const chart = new google.visualization.LineChart(document.getElementById('leaveChart'));
+            chart.draw(chartData, options);
+        }
+
+    </script>
+    <script src="scripts.js"></script>
+</body>
+</html>

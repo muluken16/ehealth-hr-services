@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Dashboard - Wereda HR</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .debug-section { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .status { padding: 10px; margin: 5px 0; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        .chart-container { width: 300px; height: 250px; margin: 10px; display: inline-block; border: 1px solid #ddd; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        pre { background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto; }
+        .btn { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        .btn:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Debug Dashboard - Wereda HR</h1>
+        
+        <div class="debug-section">
+            <h2>System Status</h2>
+            <div id="systemStatus">Loading...</div>
+        </div>
+        
+        <div class="debug-section">
+            <h2>Chart.js Test</h2>
+            <div id="chartStatus"></div>
+            <div class="chart-container">
+                <canvas id="testChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="debug-section">
+            <h2>API Endpoints Test</h2>
+            <div id="apiStatus">Testing...</div>
+            <button class="btn" onclick="testAllEndpoints()">Retest APIs</button>
+        </div>
+        
+        <div class="debug-section">
+            <h2>Live Charts</h2>
+            <div id="chartResults"></div>
+            <div class="grid">
+                <div class="chart-container">
+                    <canvas id="genderChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="departmentChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+            <button class="btn" onclick="loadAllCharts()">Reload Charts</button>
+        </div>
+        
+        <div class="debug-section">
+            <h2>Console Logs</h2>
+            <div id="consoleLogs" style="height: 200px; overflow-y: scroll; background: #f8f9fa; padding: 10px; border-radius: 4px;"></div>
+            <button class="btn" onclick="clearLogs()">Clear Logs</button>
+        </div>
+        
+        <div class="debug-section">
+            <h2>Actions</h2>
+            <button class="btn" onclick="window.location.href='wereda_hr_dashboard.php'">Go to Dashboard</button>
+            <button class="btn" onclick="window.location.href='test_data.php'">Test Database</button>
+            <button class="btn" onclick="window.location.href='diagnose.php'">View Diagnostics</button>
+        </div>
+    </div>
+
+    <script>
+        // Console logging
+        const originalLog = console.log;
+        const originalError = console.error;
+        const logContainer = document.getElementById('consoleLogs');
+        
+        function addLog(message, type = 'log') {
+            const div = document.createElement('div');
+            div.style.color = type === 'error' ? 'red' : type === 'warn' ? 'orange' : 'black';
+            div.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+            logContainer.appendChild(div);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addLog(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addLog(args.join(' '), 'error');
+        };
+        
+        function clearLogs() {
+            logContainer.innerHTML = '';
+        }
+        
+        function addStatus(container, message, type = 'success') {
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.textContent = message;
+            document.getElementById(container).appendChild(div);
+        }
+        
+        // Test Chart.js
+        function testChartJS() {
+            const container = 'chartStatus';
+            document.getElementById(container).innerHTML = '';
+            
+            if (typeof Chart !== 'undefined') {
+                addStatus(container, '✅ Chart.js loaded (Version: ' + Chart.version + ')');
+                
+                try {
+                    const ctx = document.getElementById('testChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Test 1', 'Test 2', 'Test 3'],
+                            datasets: [{
+                                label: 'Sample Data',
+                                data: [12, 19, 3],
+                                backgroundColor: ['#ff6384', '#36a2eb', '#cc65fe']
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                title: { display: true, text: 'Test Chart' }
+                            }
+                        }
+                    });
+                    addStatus(container, '✅ Test chart created successfully');
+                } catch (error) {
+                    addStatus(container, '❌ Test chart error: ' + error.message, 'error');
+                }
+            } else {
+                addStatus(container, '❌ Chart.js not loaded', 'error');
+            }
+        }
+        
+        // Test API endpoints
+        async function testAllEndpoints() {
+            const container = 'apiStatus';
+            document.getElementById(container).innerHTML = '<div class="status warning">Testing endpoints...</div>';
+            
+            const endpoints = [
+                'get_hr_stats.php',
+                'get_gender_stats.php',
+                'get_academic_stats.php',
+                'get_department_stats.php',
+                'get_job_level_stats.php',
+                'get_status_stats.php'
+            ];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    console.log('Testing endpoint:', endpoint);
+                    const response = await fetch(endpoint);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        addStatus(container, `✅ ${endpoint} - OK (${Object.keys(data.data || {}).length} items)`);
+                    } else {
+                        addStatus(container, `⚠️ ${endpoint} - No data: ${data.message || 'Unknown error'}`, 'warning');
+                    }
+                } catch (error) {
+                    addStatus(container, `❌ ${endpoint} - Error: ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        // Load charts
+        function loadAllCharts() {
+            const container = 'chartResults';
+            document.getElementById(container).innerHTML = '<div class="status warning">Loading charts...</div>';
+            
+            // Gender Chart
+            fetch('get_gender_stats.php')
+                .then(response => response.json())
+                .then(data => {
+                    const canvas = document.getElementById('genderChart');
+                    if (canvas && data.success && data.data) {
+                        const ctx = canvas.getContext('2d');
+                        new Chart(ctx, {
+                            type: 'doughnut',
+                            data: {
+                                labels: Object.keys(data.data),
+                                datasets: [{
+                                    data: Object.values(data.data),
+                                    backgroundColor: ['#4cb5ae', '#ff7e5f', '#ffc107']
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    title: { display: true, text: 'Gender Distribution' }
+                                }
+                            }
+                        });
+                        addStatus(container, '✅ Gender chart loaded');
+                    } else {
+                        addStatus(container, '❌ Gender chart failed', 'error');
+                    }
+                })
+                .catch(error => {
+                    addStatus(container, '❌ Gender chart error: ' + error.message, 'error');
+                });
+            
+            // Department Chart
+            fetch('get_department_stats.php')
+                .then(response => response.json())
+                .then(data => {
+                    const canvas = document.getElementById('departmentChart');
+                    if (canvas && data.success && data.data) {
+                        const ctx = canvas.getContext('2d');
+                        new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: Object.keys(data.data),
+                                datasets: [{
+                                    data: Object.values(data.data),
+                                    backgroundColor: '#4cb5ae'
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    title: { display: true, text: 'Department Distribution' },
+                                    legend: { display: false }
+                                }
+                            }
+                        });
+                        addStatus(container, '✅ Department chart loaded');
+                    } else {
+                        addStatus(container, '❌ Department chart failed', 'error');
+                    }
+                })
+                .catch(error => {
+                    addStatus(container, '❌ Department chart error: ' + error.message, 'error');
+                });
+            
+            // Status Chart
+            fetch('get_status_stats.php')
+                .then(response => response.json())
+                .then(data => {
+                    const canvas = document.getElementById('statusChart');
+                    if (canvas && data.success && data.data) {
+                        const ctx = canvas.getContext('2d');
+                        new Chart(ctx, {
+                            type: 'pie',
+                            data: {
+                                labels: Object.keys(data.data),
+                                datasets: [{
+                                    data: Object.values(data.data),
+                                    backgroundColor: ['#4cb5ae', '#ffc107', '#ff7e5f']
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    title: { display: true, text: 'Status Distribution' }
+                                }
+                            }
+                        });
+                        addStatus(container, '✅ Status chart loaded');
+                    } else {
+                        addStatus(container, '❌ Status chart failed', 'error');
+                    }
+                })
+                .catch(error => {
+                    addStatus(container, '❌ Status chart error: ' + error.message, 'error');
+                });
+        }
+        
+        // System diagnostics
+        function loadSystemStatus() {
+            fetch('diagnose.php')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('systemStatus');
+                    container.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                })
+                .catch(error => {
+                    document.getElementById('systemStatus').innerHTML = '<div class="status error">System diagnostics failed: ' + error.message + '</div>';
+                });
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Debug dashboard loaded');
+            testChartJS();
+            testAllEndpoints();
+            loadSystemStatus();
+            
+            setTimeout(() => {
+                loadAllCharts();
+            }, 2000);
+        });
+    </script>
+</body>
+</html>

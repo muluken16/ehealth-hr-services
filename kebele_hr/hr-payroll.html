@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealthFirst | Payroll</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../style/style.css">
+</head>
+<body>
+    <div class="hr-container">
+        <!-- Mobile Overlay -->
+        <div class="mobile-overlay" id="mobileOverlay"></div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="#" class="logo">
+                    <i class="fas fa-heartbeat"></i>
+                    <span class="logo-text">HealthFirst HR</span>
+                </a>
+                <button class="toggle-sidebar" id="toggleSidebar">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+            </div>
+
+            <nav class="sidebar-menu">
+                <ul>
+                    <li class="menu-item">
+                        <a href="kebele_hr_dashboard.php">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span class="menu-text">HR Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="hr-employees.html">
+                            <i class="fas fa-users"></i>
+                            <span class="menu-text">Employees</span>
+                            <span class="menu-badge">142</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="hr-attendance.html">
+                            <i class="fas fa-calendar-check"></i>
+                            <span class="menu-text">Attendance</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="hr-leave.html">
+                            <i class="fas fa-umbrella-beach"></i>
+                            <span class="menu-text">Leave Management</span>
+                            <span class="menu-badge">8</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="hr-recruitment.html">
+                            <i class="fas fa-user-plus"></i>
+                            <span class="menu-text">Recruitment</span>
+                            <span class="menu-badge">5</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="hr-training.html">
+                            <i class="fas fa-graduation-cap"></i>
+                            <span class="menu-text">Training</span>
+                        </a>
+                    </li>
+                    <li class="menu-item active">
+                        <a href="hr-payroll.html">
+                            <i class="fas fa-money-check-alt"></i>
+                            <span class="menu-text">Payroll</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="hr-reports.html">
+                            <i class="fas fa-chart-bar"></i>
+                            <span class="menu-text">HR Reports</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="hr-settings.html">
+                            <i class="fas fa-cog"></i>
+                            <span class="menu-text">HR Settings</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <button class="mobile-menu-btn" id="mobileMenuBtn">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="page-title">Payroll Management</h1>
+                </div>
+
+                <div class="header-actions">
+                    <button class="btn-primary">
+                        <i class="fas fa-play"></i> Process Payroll
+                    </button>
+                </div>
+            </header>
+
+            <!-- Content -->
+            <div class="content">
+                <!-- Payroll Overview Section -->
+                <div class="hr-section">
+                    <div class="hr-section-header">
+                        <h2 class="hr-section-title">Payroll Overview</h2>
+                        <div class="hr-section-actions">
+                            <button class="section-action-btn">
+                                <i class="fas fa-calendar-alt"></i> Select Period
+                            </button>
+                            <button class="section-action-btn">
+                                <i class="fas fa-download"></i> Export
+                            </button>
+                        </div>
+                    </div>
+                    <div class="hr-section-body">
+                        <div class="payroll-stats" id="payrollStatsContainer">
+                            <!-- Payroll stats will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Employee Payroll Section -->
+                <div class="hr-section">
+                    <div class="hr-section-header">
+                        <h2 class="hr-section-title">Employee Payroll</h2>
+                        <div class="hr-section-actions">
+                            <button class="section-action-btn">
+                                <i class="fas fa-plus"></i> Add Bonus
+                            </button>
+                            <button class="section-action-btn">
+                                <i class="fas fa-edit"></i> Adjust Salary
+                            </button>
+                        </div>
+                    </div>
+                    <div class="hr-section-body">
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Employee</th>
+                                        <th>Basic Salary</th>
+                                        <th>Allowances</th>
+                                        <th>Deductions</th>
+                                        <th>Net Salary</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="payrollTableBody">
+                                    <!-- Payroll data will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Load payroll data on page load
+        window.addEventListener('load', function() {
+            // Load payroll stats
+            fetch('get_kebele_hr_payroll_stats.php')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('payrollStatsContainer');
+                    container.innerHTML = `
+                        <div class="payroll-stat-cards">
+                            <div class="payroll-stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h3>${data.total_employees}</h3>
+                                    <p>Total Employees</p>
+                                </div>
+                            </div>
+                            <div class="payroll-stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-dollar-sign"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h3>ETB ${data.total_payroll.toLocaleString()}</h3>
+                                    <p>Total Payroll</p>
+                                </div>
+                            </div>
+                            <div class="payroll-stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-plus-circle"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h3>ETB ${data.total_allowances.toLocaleString()}</h3>
+                                    <p>Total Allowances</p>
+                                </div>
+                            </div>
+                            <div class="payroll-stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-minus-circle"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h3>ETB ${data.total_deductions.toLocaleString()}</h3>
+                                    <p>Total Deductions</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                })
+                .catch(error => console.error('Error loading payroll stats:', error));
+
+            // Load employee payroll data
+            fetch('get_kebele_hr_payroll.php')
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('payrollTableBody');
+                    tbody.innerHTML = '';
+
+                    if (data.length > 0) {
+                        data.forEach(employee => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>
+                                    <div class="employee-info">
+                                        <div class="employee-avatar">${employee.first_name.charAt(0)}${employee.last_name.charAt(0)}</div>
+                                        <div>
+                                            <div class="employee-name">${employee.first_name} ${employee.last_name}</div>
+                                            <div class="employee-id">${employee.employee_id}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>ETB ${employee.basic_salary ? employee.basic_salary.toLocaleString() : '0'}</td>
+                                <td>ETB ${employee.allowances ? employee.allowances.toLocaleString() : '0'}</td>
+                                <td>ETB ${employee.deductions ? employee.deductions.toLocaleString() : '0'}</td>
+                                <td><strong>ETB ${employee.net_salary ? employee.net_salary.toLocaleString() : '0'}</strong></td>
+                                <td><span class="status-badge ${employee.payroll_status === 'processed' ? 'active' : 'inactive'}">${employee.payroll_status || 'Pending'}</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="action-btn view"><i class="fas fa-eye"></i></button>
+                                        <button class="action-btn edit"><i class="fas fa-edit"></i></button>
+                                    </div>
+                                </td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="7">No payroll data available.</td></tr>';
+                    }
+                })
+                .catch(error => console.error('Error loading payroll data:', error));
+        });
+
+        // Sidebar toggle
+        document.getElementById('toggleSidebar').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+        });
+
+        document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.add('mobile-open');
+            document.getElementById('mobileOverlay').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+
+        document.getElementById('mobileOverlay').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.remove('mobile-open');
+            document.getElementById('mobileOverlay').classList.remove('active');
+            document.body.style.overflow = 'auto';
+        });
+    </script>
+</body>
+</html>
