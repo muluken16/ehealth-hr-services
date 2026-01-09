@@ -88,6 +88,7 @@ $conn->close();
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -95,70 +96,13 @@ $conn->close();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../style/styleho.css">
 </head>
+
 <body>
     <div class="admin-container">
         <!-- Mobile Overlay -->
         <div class="mobile-overlay" id="mobileOverlay"></div>
 
-        <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <a href="wereda_ho_dashboard.php" class="logo">
-                    <i class="fas fa-heartbeat"></i>
-                    <span class="logo-text">HealthFirst</span>
-                </a>
-                <button class="toggle-sidebar" id="toggleSidebar">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-            </div>
-
-            <nav class="sidebar-menu">
-                <ul>
-                    <li class="menu-item">
-                        <a href="wereda_ho_dashboard.php">
-                            <i class="fas fa-tachometer-alt"></i>
-                            <span class="menu-text">Dashboard</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="wereda_patients.php">
-                            <i class="fas fa-user-injured"></i>
-                            <span class="menu-text">Patients</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="wereda_appointments.php">
-                            <i class="fas fa-calendar-check"></i>
-                            <span class="menu-text">Appointments</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="wereda_inventory.php">
-                            <i class="fas fa-pills"></i>
-                            <span class="menu-text">Inventory</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="wereda_reports.php">
-                            <i class="fas fa-chart-bar"></i>
-                            <span class="menu-text">Reports</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="wereda_emergency.php">
-                            <i class="fas fa-ambulance"></i>
-                            <span class="menu-text">Emergency</span>
-                        </a>
-                    </li>
-                    <li class="menu-item active">
-                        <a href="wereda_qa.php">
-                            <i class="fas fa-clipboard-check"></i>
-                            <span class="menu-text">Quality Assurance</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        </aside>
+        <?php include 'sidebar.php'; ?>
 
         <!-- Main Content -->
         <main class="main-content">
@@ -215,47 +159,48 @@ $conn->close();
                         </div>
                         <div class="stat-info">
                             <h3><?php echo $stats['needs_improvement']; ?></h3>
-                            <p>Needs Improvement (<80%)</p>
+                            <p>Needs Improvement (<80%)< /p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Upcoming Assessments -->
                 <?php if ($upcoming->num_rows > 0): ?>
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">Upcoming Assessments</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-container">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Facility</th>
-                                        <th>Assessment Type</th>
-                                        <th>Next Assessment</th>
-                                        <th>Days Left</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php while ($assessment = $upcoming->fetch_assoc()): ?>
-                                    <tr>
-                                        <td><?php echo htmlspecialchars($assessment['facility_name']); ?></td>
-                                        <td><?php echo htmlspecialchars($assessment['assessment_type']); ?></td>
-                                        <td><?php echo date('M j, Y', strtotime($assessment['next_assessment_date'])); ?></td>
-                                        <td>
-                                            <?php
-                                            $days_left = ceil((strtotime($assessment['next_assessment_date']) - time()) / (60 * 60 * 24));
-                                            echo $days_left . ' days';
-                                            ?>
-                                        </td>
-                                    </tr>
-                                    <?php endwhile; ?>
-                                </tbody>
-                            </table>
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Upcoming Assessments</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Facility</th>
+                                            <th>Assessment Type</th>
+                                            <th>Next Assessment</th>
+                                            <th>Days Left</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php while ($assessment = $upcoming->fetch_assoc()): ?>
+                                            <tr>
+                                                <td><?php echo htmlspecialchars($assessment['facility_name']); ?></td>
+                                                <td><?php echo htmlspecialchars($assessment['assessment_type']); ?></td>
+                                                <td><?php echo date('M j, Y', strtotime($assessment['next_assessment_date'])); ?>
+                                                </td>
+                                                <td>
+                                                    <?php
+                                                    $days_left = ceil((strtotime($assessment['next_assessment_date']) - time()) / (60 * 60 * 24));
+                                                    echo $days_left . ' days';
+                                                    ?>
+                                                </td>
+                                            </tr>
+                                        <?php endwhile; ?>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
-                </div>
                 <?php endif; ?>
 
                 <!-- Filters -->
@@ -268,9 +213,9 @@ $conn->close();
                                     <select name="assessment_type">
                                         <option value="">All Types</option>
                                         <?php while ($type = $assessment_types->fetch_assoc()): ?>
-                                        <option value="<?php echo htmlspecialchars($type['assessment_type']); ?>" <?php echo $assessment_type_filter == $type['assessment_type'] ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($type['assessment_type']); ?>
-                                        </option>
+                                            <option value="<?php echo htmlspecialchars($type['assessment_type']); ?>" <?php echo $assessment_type_filter == $type['assessment_type'] ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($type['assessment_type']); ?>
+                                            </option>
                                         <?php endwhile; ?>
                                     </select>
                                 </div>
@@ -279,9 +224,9 @@ $conn->close();
                                     <select name="kebele">
                                         <option value="">All Kebeles</option>
                                         <?php while ($kebele = $kebeles->fetch_assoc()): ?>
-                                        <option value="<?php echo htmlspecialchars($kebele['kebele']); ?>" <?php echo $kebele_filter == $kebele['kebele'] ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($kebele['kebele']); ?>
-                                        </option>
+                                            <option value="<?php echo htmlspecialchars($kebele['kebele']); ?>" <?php echo $kebele_filter == $kebele['kebele'] ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($kebele['kebele']); ?>
+                                            </option>
                                         <?php endwhile; ?>
                                     </select>
                                 </div>
@@ -315,39 +260,43 @@ $conn->close();
                                 </thead>
                                 <tbody>
                                     <?php while ($assessment = $assessments->fetch_assoc()): ?>
-                                    <tr>
-                                        <td><?php echo htmlspecialchars($assessment['facility_name']); ?></td>
-                                        <td><?php echo htmlspecialchars($assessment['assessment_type']); ?></td>
-                                        <td><?php echo $assessment['score']; ?>%</td>
-                                        <td>
-                                            <span class="status-badge <?php
+                                        <tr>
+                                            <td><?php echo htmlspecialchars($assessment['facility_name']); ?></td>
+                                            <td><?php echo htmlspecialchars($assessment['assessment_type']); ?></td>
+                                            <td><?php echo $assessment['score']; ?>%</td>
+                                            <td>
+                                                <span class="status-badge <?php
                                                 echo $assessment['score'] >= 90 ? 'success' :
-                                                     ($assessment['score'] >= 80 ? '' :
-                                                     ($assessment['score'] >= 70 ? 'warning' : 'danger'));
-                                            ?>">
-                                                <?php
-                                                echo $assessment['score'] >= 90 ? 'Excellent' :
-                                                     ($assessment['score'] >= 80 ? 'Good' :
-                                                     ($assessment['score'] >= 70 ? 'Fair' : 'Poor'));
-                                                ?>
-                                            </span>
-                                        </td>
-                                        <td><?php echo htmlspecialchars($assessment['assessed_by_name']); ?></td>
-                                        <td><?php echo date('M j, Y', strtotime($assessment['assessment_date'])); ?></td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button class="action-btn view" onclick="viewAssessment(<?php echo $assessment['id']; ?>)">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
-                                                <button class="action-btn edit" onclick="editAssessment(<?php echo $assessment['id']; ?>)">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <button class="action-btn delete" onclick="deleteAssessment(<?php echo $assessment['id']; ?>)">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                                    ($assessment['score'] >= 80 ? '' :
+                                                        ($assessment['score'] >= 70 ? 'warning' : 'danger'));
+                                                ?>">
+                                                    <?php
+                                                    echo $assessment['score'] >= 90 ? 'Excellent' :
+                                                        ($assessment['score'] >= 80 ? 'Good' :
+                                                            ($assessment['score'] >= 70 ? 'Fair' : 'Poor'));
+                                                    ?>
+                                                </span>
+                                            </td>
+                                            <td><?php echo htmlspecialchars($assessment['assessed_by_name']); ?></td>
+                                            <td><?php echo date('M j, Y', strtotime($assessment['assessment_date'])); ?>
+                                            </td>
+                                            <td>
+                                                <div class="action-buttons">
+                                                    <button class="action-btn view"
+                                                        onclick="viewAssessment(<?php echo $assessment['id']; ?>)">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    <button class="action-btn edit"
+                                                        onclick="editAssessment(<?php echo $assessment['id']; ?>)">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button class="action-btn delete"
+                                                        onclick="deleteAssessment(<?php echo $assessment['id']; ?>)">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
                                     <?php endwhile; ?>
                                 </tbody>
                             </table>
@@ -410,11 +359,13 @@ $conn->close();
                     </div>
                     <div class="form-group">
                         <label for="findings">Findings *</label>
-                        <textarea id="findings" name="findings" rows="3" required placeholder="Key findings from the assessment..."></textarea>
+                        <textarea id="findings" name="findings" rows="3" required
+                            placeholder="Key findings from the assessment..."></textarea>
                     </div>
                     <div class="form-group">
                         <label for="recommendations">Recommendations *</label>
-                        <textarea id="recommendations" name="recommendations" rows="3" required placeholder="Recommendations for improvement..."></textarea>
+                        <textarea id="recommendations" name="recommendations" rows="3" required
+                            placeholder="Recommendations for improvement..."></textarea>
                     </div>
                     <div class="form-actions">
                         <button type="button" class="btn-secondary cancel-btn">Cancel</button>
@@ -554,4 +505,5 @@ $conn->close();
         document.getElementById('assessment_date').value = new Date().toISOString().split('T')[0];
     </script>
 </body>
+
 </html>

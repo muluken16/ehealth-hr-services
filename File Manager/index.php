@@ -99,12 +99,31 @@ $stmt->close();
             padding: 20px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             transition: all 0.3s;
-            border: 1px solid #e0e0e0;
+            border: 2px solid transparent;
+            position: relative;
         }
         
         .file-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        
+        .file-card.selected {
+            border-color: #3498db;
+            background: #e8f4fc;
+        }
+        
+        .file-select {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .file-card:hover .file-select,
+        .file-card.selected .file-select {
+            opacity: 1;
         }
         
         .file-icon {
@@ -116,18 +135,20 @@ $stmt->close();
         .file-icon.pdf { color: #e74c3c; }
         .file-icon.doc { color: #3498db; }
         .file-icon.image { color: #27ae60; }
+        .file-icon.archive { color: #f39c12; }
+        .file-icon.text { color: #95a5a6; }
         .file-icon.default { color: #95a5a6; }
         
         .file-actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             margin-top: 15px;
         }
         
         .btn-action {
             flex: 1;
             padding: 8px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
         
         .stats-card {
@@ -169,6 +190,10 @@ $stmt->close();
             color: white;
         }
         
+        .modal-header .btn-close-white {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
+        
         .progress-container {
             display: none;
             margin-top: 20px;
@@ -202,9 +227,57 @@ $stmt->close();
         .user-item:last-child {
             border-bottom: none;
         }
+        
+        .bulk-actions-bar {
+            background: #3498db;
+            color: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .filter-bar {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .storage-chart {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+        }
+        
+        .progress {
+            height: 8px;
+            border-radius: 4px;
+        }
+        
+        .pagination .page-link {
+            color: #667eea;
+        }
+        
+        .pagination .page-item.active .page-link {
+            background-color: #667eea;
+            border-color: #667eea;
+        }
+        
+        .pagination .page-item.disabled .page-link {
+            color: #6c757d;
+        }
+        
+        .multi-select-mode .file-card {
+            cursor: pointer;
+        }
+        
+        .multi-select-mode .file-card:hover {
+            border-color: #3498db;
+        }
     </style>
 </head>
-<body>
+<body data-user-id="<?php echo $userId; ?>">
     <div class="file-manager-container">
         <div class="container-fluid">
             <div class="row">
@@ -216,6 +289,7 @@ $stmt->close();
                                 <div class="p-3 border-bottom">
                                     <h5 class="mb-0"><i class="fas fa-folder-open me-2"></i>File Manager</h5>
                                     <small class="text-muted"><?php echo htmlspecialchars($userInfo['name']); ?></small>
+                                    <small class="d-block text-muted small"><?php echo ucwords(str_replace('_', ' ', $userInfo['role'])); ?></small>
                                 </div>
                                 
                                 <nav class="nav flex-column">
@@ -261,9 +335,11 @@ $stmt->close();
                                 <div id="dashboard-section" class="content-section">
                                     <div class="d-flex justify-content-between align-items-center mb-4">
                                         <h2><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h2>
-                                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
-                                            <i class="fas fa-upload me-2"></i>Upload File
-                                        </button>
+                                        <div>
+                                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                                                <i class="fas fa-upload me-2"></i>Upload File
+                                            </button>
+                                        </div>
                                     </div>
                                     
                                     <!-- Stats Cards -->
@@ -314,16 +390,34 @@ $stmt->close();
                                         </div>
                                     </div>
                                     
-                                    <!-- Recent Files -->
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Recent Files</h5>
+                                    <!-- Storage Breakdown -->
+                                    <div class="row mb-4">
+                                        <div class="col-md-8">
+                                            <!-- Recent Files -->
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Recent Files</h5>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div id="recent-files-list">
+                                                        <div class="text-center py-4">
+                                                            <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                                                            <p class="mt-2 text-muted">Loading recent files...</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="card-body">
-                                            <div id="recent-files-list">
-                                                <div class="text-center py-4">
-                                                    <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
-                                                    <p class="mt-2 text-muted">Loading recent files...</p>
+                                        <div class="col-md-4">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Storage</h5>
+                                                </div>
+                                                <div class="card-body" id="storage-breakdown">
+                                                    <div class="text-center py-4">
+                                                        <i class="fas fa-spinner fa-spin text-muted"></i>
+                                                        <p class="mt-2 text-muted">Loading...</p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -489,7 +583,100 @@ $stmt->close();
         </div>
     </div>
 
+    <!-- Move Modal -->
+    <div class="modal fade" id="moveModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-arrows-alt me-2"></i>Move File</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="moveForm">
+                        <input type="hidden" name="file_id" id="moveFileId">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Current Location</label>
+                            <div id="moveFromLocation" class="text-muted p-2 bg-light rounded">
+                                Loading...
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Move To</label>
+                            <select class="form-select" name="category" id="moveDestination" required>
+                                <option value="">Select Destination</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="moveBtn">
+                        <i class="fas fa-arrows-alt me-2"></i>Move File
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Details Modal -->
+    <div class="modal fade" id="detailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-info-circle me-2"></i>File Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="detailsContent">
+                        <!-- Details will be loaded here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/file-manager.js"></script>
+    
+    <script>
+        // Add move button handler
+        document.getElementById('moveBtn')?.addEventListener('click', function() {
+            const fileId = document.getElementById('moveFileId').value;
+            const category = document.getElementById('moveDestination').value;
+            
+            if (!fileId || !category) {
+                alert('Please select a destination');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file_id', fileId);
+            formData.append('category', category);
+            
+            fetch('api/move.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('moveModal')).hide();
+                    fileManager.showNotification('File moved successfully', 'success');
+                    fileManager.refreshCurrentSection();
+                } else {
+                    fileManager.showNotification(data.message || 'Move failed', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Move error:', error);
+                fileManager.showNotification('Error moving file', 'error');
+            });
+        });
+    </script>
 </body>
 </html>

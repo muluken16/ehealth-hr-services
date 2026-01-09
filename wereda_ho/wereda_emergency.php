@@ -90,6 +90,7 @@ $conn->close();
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -97,70 +98,13 @@ $conn->close();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../style/styleho.css">
 </head>
+
 <body>
     <div class="admin-container">
         <!-- Mobile Overlay -->
         <div class="mobile-overlay" id="mobileOverlay"></div>
 
-        <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <a href="wereda_ho_dashboard.php" class="logo">
-                    <i class="fas fa-heartbeat"></i>
-                    <span class="logo-text">HealthFirst</span>
-                </a>
-                <button class="toggle-sidebar" id="toggleSidebar">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-            </div>
-
-            <nav class="sidebar-menu">
-                <ul>
-                    <li class="menu-item">
-                        <a href="wereda_ho_dashboard.php">
-                            <i class="fas fa-tachometer-alt"></i>
-                            <span class="menu-text">Dashboard</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="wereda_patients.php">
-                            <i class="fas fa-user-injured"></i>
-                            <span class="menu-text">Patients</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="wereda_appointments.php">
-                            <i class="fas fa-calendar-check"></i>
-                            <span class="menu-text">Appointments</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="wereda_inventory.php">
-                            <i class="fas fa-pills"></i>
-                            <span class="menu-text">Inventory</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="wereda_reports.php">
-                            <i class="fas fa-chart-bar"></i>
-                            <span class="menu-text">Reports</span>
-                        </a>
-                    </li>
-                    <li class="menu-item active">
-                        <a href="wereda_emergency.php">
-                            <i class="fas fa-ambulance"></i>
-                            <span class="menu-text">Emergency</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="wereda_qa.php">
-                            <i class="fas fa-clipboard-check"></i>
-                            <span class="menu-text">Quality Assurance</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        </aside>
+        <?php include 'sidebar.php'; ?>
 
         <!-- Main Content -->
         <main class="main-content">
@@ -259,9 +203,11 @@ $conn->close();
                                     <select name="severity">
                                         <option value="">All Severity</option>
                                         <option value="critical" <?php echo $severity_filter == 'critical' ? 'selected' : ''; ?>>Critical</option>
-                                        <option value="high" <?php echo $severity_filter == 'high' ? 'selected' : ''; ?>>High</option>
+                                        <option value="high" <?php echo $severity_filter == 'high' ? 'selected' : ''; ?>>
+                                            High</option>
                                         <option value="medium" <?php echo $severity_filter == 'medium' ? 'selected' : ''; ?>>Medium</option>
-                                        <option value="low" <?php echo $severity_filter == 'low' ? 'selected' : ''; ?>>Low</option>
+                                        <option value="low" <?php echo $severity_filter == 'low' ? 'selected' : ''; ?>>Low
+                                        </option>
                                     </select>
                                 </div>
                                 <div class="form-group">
@@ -295,43 +241,48 @@ $conn->close();
                                 </thead>
                                 <tbody>
                                     <?php while ($emergency = $emergencies->fetch_assoc()): ?>
-                                    <tr>
-                                        <td><?php echo htmlspecialchars($emergency['incident_type']); ?></td>
-                                        <td><?php echo htmlspecialchars($emergency['location']); ?></td>
-                                        <td>
-                                            <span class="status-badge <?php
+                                        <tr>
+                                            <td><?php echo htmlspecialchars($emergency['incident_type']); ?></td>
+                                            <td><?php echo htmlspecialchars($emergency['location']); ?></td>
+                                            <td>
+                                                <span class="status-badge <?php
                                                 echo $emergency['severity'] == 'critical' ? 'danger' :
-                                                     ($emergency['severity'] == 'high' ? 'warning' :
-                                                     ($emergency['severity'] == 'medium' ? '' : 'success'));
-                                            ?>">
-                                                <?php echo ucfirst($emergency['severity']); ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span class="status-badge <?php
+                                                    ($emergency['severity'] == 'high' ? 'warning' :
+                                                        ($emergency['severity'] == 'medium' ? '' : 'success'));
+                                                ?>">
+                                                    <?php echo ucfirst($emergency['severity']); ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="status-badge <?php
                                                 echo $emergency['status'] == 'resolved' ? 'success' :
-                                                     ($emergency['status'] == 'responding' ? '' : 'warning');
-                                            ?>">
-                                                <?php echo ucfirst($emergency['status']); ?>
-                                            </span>
-                                        </td>
-                                        <td><?php echo htmlspecialchars($emergency['reported_by_name'] ?? 'Unknown'); ?></td>
-                                        <td><?php echo htmlspecialchars($emergency['assigned_to_name'] ?? 'Unassigned'); ?></td>
-                                        <td><?php echo date('M j, Y H:i', strtotime($emergency['created_at'])); ?></td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button class="action-btn view" onclick="viewEmergency(<?php echo $emergency['id']; ?>)">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
-                                                <button class="action-btn edit" onclick="editEmergency(<?php echo $emergency['id']; ?>)">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <button class="action-btn delete" onclick="deleteEmergency(<?php echo $emergency['id']; ?>)">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                                    ($emergency['status'] == 'responding' ? '' : 'warning');
+                                                ?>">
+                                                    <?php echo ucfirst($emergency['status']); ?>
+                                                </span>
+                                            </td>
+                                            <td><?php echo htmlspecialchars($emergency['reported_by_name'] ?? 'Unknown'); ?>
+                                            </td>
+                                            <td><?php echo htmlspecialchars($emergency['assigned_to_name'] ?? 'Unassigned'); ?>
+                                            </td>
+                                            <td><?php echo date('M j, Y H:i', strtotime($emergency['created_at'])); ?></td>
+                                            <td>
+                                                <div class="action-buttons">
+                                                    <button class="action-btn view"
+                                                        onclick="viewEmergency(<?php echo $emergency['id']; ?>)">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    <button class="action-btn edit"
+                                                        onclick="editEmergency(<?php echo $emergency['id']; ?>)">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button class="action-btn delete"
+                                                        onclick="deleteEmergency(<?php echo $emergency['id']; ?>)">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
                                     <?php endwhile; ?>
                                 </tbody>
                             </table>
@@ -367,11 +318,13 @@ $conn->close();
                     </div>
                     <div class="form-group">
                         <label for="description">Description *</label>
-                        <textarea id="description" name="description" rows="3" required placeholder="Describe the emergency situation..."></textarea>
+                        <textarea id="description" name="description" rows="3" required
+                            placeholder="Describe the emergency situation..."></textarea>
                     </div>
                     <div class="form-group">
                         <label for="location">Location *</label>
-                        <input type="text" id="location" name="location" required placeholder="Specific location of the incident">
+                        <input type="text" id="location" name="location" required
+                            placeholder="Specific location of the incident">
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -390,9 +343,9 @@ $conn->close();
                                 <?php
                                 $staff->data_seek(0);
                                 while ($member = $staff->fetch_assoc()): ?>
-                                <option value="<?php echo $member['id']; ?>">
-                                    <?php echo htmlspecialchars($member['name']); ?>
-                                </option>
+                                    <option value="<?php echo $member['id']; ?>">
+                                        <?php echo htmlspecialchars($member['name']); ?>
+                                    </option>
                                 <?php endwhile; ?>
                             </select>
                         </div>
@@ -473,9 +426,9 @@ $conn->close();
                             <?php
                             $staff->data_seek(0);
                             while ($member = $staff->fetch_assoc()): ?>
-                            <option value="<?php echo $member['id']; ?>">
-                                <?php echo htmlspecialchars($member['name']); ?>
-                            </option>
+                                <option value="<?php echo $member['id']; ?>">
+                                    <?php echo htmlspecialchars($member['name']); ?>
+                                </option>
                             <?php endwhile; ?>
                         </select>
                     </div>
@@ -556,4 +509,5 @@ $conn->close();
         });
     </script>
 </body>
+
 </html>

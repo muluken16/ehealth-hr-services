@@ -1,4 +1,7 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -16,167 +19,6 @@ $user_woreda = $_SESSION['woreda'] ?? 'Woreda 1';
 
 // Include database connection
 require_once '../db.php';
-
-// Initialize variables
-$totalEmployees = 0;
-$activeEmployees = 0;
-$onLeave = 0;
-$openPositions = 0;
-$pendingLeave = 0;
-$attendanceRate = 0;
-$employees = [];
-$leaveRequests = [];
-$jobPostings = [];
-$trainings = [];
-$activities = [];
-
-try {
-    $conn = getDBConnection();
-    
-    // 1. Get Stats
-    $woreda_wildcard = "%$user_woreda%";
-    
-    // Total Employees
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM employees WHERE woreda LIKE ?");
-    $stmt->bind_param("s", $woreda_wildcard);
-    $stmt->execute();
-    $totalEmployees = $stmt->get_result()->fetch_assoc()['count'] ?? 0;
-    
-    // Active Employees
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM employees WHERE woreda LIKE ? AND status = 'active'");
-    $stmt->bind_param("s", $woreda_wildcard);
-    $stmt->execute();
-    $activeEmployees = $stmt->get_result()->fetch_assoc()['count'] ?? 0;
-    
-    // On Leave
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM employees WHERE woreda LIKE ? AND status = 'on-leave'");
-    $stmt->bind_param("s", $woreda_wildcard);
-    $stmt->execute();
-    $onLeave = $stmt->get_result()->fetch_assoc()['count'] ?? 0;
-    
-    // Open Positions (Assuming postings are per woreda or global if woreda is null, let's filter by woreda if column exists, else global)
-    // Checking schema: job_postings has 'woreda' column.
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM job_postings WHERE (woreda LIKE ? OR woreda IS NULL) AND status = 'open'");
-    $stmt->bind_param("s", $woreda_wildcard);
-    $stmt->execute();
-    $openPositions = $stmt->get_result()->fetch_assoc()['count'] ?? 0;
-    
-    // Pending Leave Requests
-    // Join with employees to filter by woreda
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM leave_requests lr JOIN employees e ON lr.employee_id = e.employee_id WHERE e.woreda LIKE ? AND lr.status = 'pending'");
-    $stmt->bind_param("s", $woreda_wildcard);
-    $stmt->execute();
-    $pendingLeave = $stmt->get_result()->fetch_assoc()['count'] ?? 0;
-    
-    // Calculate attendance rate
-    $attendanceRate = ($totalEmployees > 0) ? round(($activeEmployees / $totalEmployees) * 100) : 0;
-
-    // 2. Get Recent Employees
-    $stmt = $conn->prepare("SELECT * FROM employees WHERE woreda LIKE ? ORDER BY created_at DESC LIMIT 5");
-    $stmt->bind_param("s", $woreda_wildcard);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    while ($row = $res->fetch_assoc()) {
-        $employees[] = $row;
-    }
-
-    // 3. Get Pending Leave Requests
-    $stmt = $conn->prepare("SELECT lr.*, e.first_name, e.last_name, e.department_assigned FROM leave_requests lr JOIN employees e ON lr.employee_id = e.employee_id WHERE e.woreda LIKE ? AND lr.status = 'pending' ORDER BY lr.created_at DESC LIMIT 5");
-    $stmt->bind_param("s", $woreda_wildcard);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    while ($row = $res->fetch_assoc()) {
-        $leaveRequests[] = $row;
-    }
-
-    // 4. Get Open Job Postings
-    $stmt = $conn->prepare("SELECT * FROM job_postings WHERE (woreda LIKE ? OR woreda IS NULL) AND status = 'open' ORDER BY posted_at DESC LIMIT 5");
-    $stmt->bind_param("s", $woreda_wildcard);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    while ($row = $res->fetch_assoc()) {
-        $jobPostings[] = $row;
-    }
-
-    // 5. Get Upcoming Trainings
-    $stmt = $conn->prepare("SELECT * FROM training_sessions WHERE (woreda LIKE ? OR woreda IS NULL) AND session_date >= CURDATE() ORDER BY session_date ASC LIMIT 3");
-    $stmt->bind_param("s", $woreda_wildcard);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    while ($row = $res->fetch_assoc()) {
-        $trainings[] = $row;
-    }
-
-    // 6. Get Recent Activities (Union of Employees, Leaves, Jobs)
-    // We can do this via separate queries and merge in PHP for simplicity
-    
-    // New Employees
-    foreach ($employees as $emp) {
-        $activities[] = [
-            'type' => 'user-plus',
-            'title' => 'New Employee Added',
-            'desc' => "{$emp['first_name']} {$emp['last_name']} joined {$emp['department_assigned']}",
-            'time' => $emp['created_at'],
-            'color' => '#4cb5ae',
-            'bg' => '#4cb5ae15'
-        ];
-    }
-    
-    // Recent Leaves (even if not pending, let's fetch recent ones)
-    $stmt = $conn->prepare("SELECT lr.*, e.first_name, e.last_name FROM leave_requests lr JOIN employees e ON lr.employee_id = e.employee_id WHERE e.woreda LIKE ? ORDER BY lr.created_at DESC LIMIT 3");
-    $stmt->bind_param("s", $woreda_wildcard);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    while ($row = $res->fetch_assoc()) {
-        $activities[] = [
-            'type' => 'umbrella-beach',
-            'title' => 'Leave Request',
-            'desc' => "{$row['first_name']} {$row['last_name']} requested {$row['leave_type']} leave",
-            'time' => $row['created_at'],
-            'color' => '#ff7e5f',
-            'bg' => '#ff7e5f15'
-        ];
-    }
-    
-    // New Jobs
-    $stmt = $conn->prepare("SELECT * FROM job_postings WHERE (woreda LIKE ? OR woreda IS NULL) ORDER BY posted_at DESC LIMIT 3");
-    $stmt->bind_param("s", $woreda_wildcard);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    while ($row = $res->fetch_assoc()) {
-        $activities[] = [
-            'type' => 'bullhorn',
-            'title' => 'Job Posted',
-            'desc' => "New position: {$row['title']}",
-            'time' => $row['posted_at'],
-            'color' => '#ffc107',
-            'bg' => '#ffc10715'
-        ];
-    }
-    
-    // Sort activities by time desc
-    usort($activities, function($a, $b) {
-        return strtotime($b['time']) - strtotime($a['time']);
-    });
-    
-    // Limit to 5
-    $activities = array_slice($activities, 0, 5);
-
-} catch (Exception $e) {
-    error_log("Dashboard Error: " . $e->getMessage());
-}
-
-function time_elapsed($datetime) {
-    $now = new DateTime;
-    $ago = new DateTime($datetime);
-    $diff = $now->diff($ago);
-
-    if ($diff->d == 0 && $diff->h == 0 && $diff->i < 60) return "Just now";
-    if ($diff->d == 0 && $diff->h < 24) return $diff->h . " hours ago";
-    if ($diff->d < 7) return $diff->d . " days ago";
-    return date('d M Y', strtotime($datetime));
-}
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -203,7 +45,7 @@ function time_elapsed($datetime) {
                 <div class="welcome-banner">
                     <div class="welcome-content">
                         <h2>Welcome back, <?php echo explode(' ', $_SESSION['user_name'])[0]; ?>! 👋</h2>
-                        <p>Here's what's happening with your Woreda workforce today. You have <span class="highlight"><?php echo $pendingLeave; ?> pending</span> leave requests to review.</p>
+                        <p>Here's what's happening with your Woreda workforce today. Check the sections below for updates.</p>
                     </div>
                     <div class="welcome-date">
                         <i class="fas fa-clock"></i>
@@ -218,7 +60,7 @@ function time_elapsed($datetime) {
                             <i class="fas fa-users"></i>
                         </div>
                         <div class="hr-stat-info">
-                            <h3 id="totalEmployees"><?php echo $totalEmployees; ?></h3>
+                            <h3 id="stat-total">--</h3>
                             <div class="stat-footer">
                                 <p>Total Employees</p>
                                 <span class="trend up" id="trendEmployees">+4.8%</span>
@@ -231,10 +73,10 @@ function time_elapsed($datetime) {
                             <i class="fas fa-user-plus"></i>
                         </div>
                         <div class="hr-stat-info">
-                            <h3 id="openPositions"><?php echo $openPositions; ?></h3>
+                            <h3 id="stat-active">--</h3>
                             <div class="stat-footer">
-                                <p>Open Positions</p>
-                                <span class="trend down" id="trendPositions">-12%</span>
+                                <p>Active Employees</p>
+                                <span class="trend up" id="trendPositions">--</span>
                             </div>
                         </div>
                     </div>
@@ -244,10 +86,10 @@ function time_elapsed($datetime) {
                             <i class="fas fa-umbrella-beach"></i>
                         </div>
                         <div class="hr-stat-info">
-                            <h3 id="onLeave"><?php echo $onLeave; ?></h3>
+                            <h3 id="stat-leave">--</h3>
                             <div class="stat-footer">
                                 <p>On Leave Today</p>
-                                <span class="trend up" id="trendLeave">+2.4%</span>
+                                <span class="trend up" id="trendLeave">--</span>
                             </div>
                         </div>
                     </div>
@@ -257,10 +99,10 @@ function time_elapsed($datetime) {
                             <i class="fas fa-calendar-check"></i>
                         </div>
                         <div class="hr-stat-info">
-                            <h3 id="attendanceRate"><?php echo $attendanceRate; ?>%</h3>
+                            <h3 id="stat-attendance">--%</h3>
                             <div class="stat-footer">
                                 <p>Attendance Rate</p>
-                                <span class="trend up" id="trendAttendance">+1.2%</span>
+                                <span class="trend up" id="trendAttendance">--</span>
                             </div>
                         </div>
                     </div>
@@ -291,9 +133,7 @@ function time_elapsed($datetime) {
                     <div class="hr-action-btn" onclick="document.getElementById('leaveSection').scrollIntoView({behavior: 'smooth'})">
                         <i class="fas fa-clipboard-list"></i>
                         <span>Leave Requests</span>
-                        <?php if($pendingLeave > 0): ?>
-                        <span class="action-badge"><?php echo $pendingLeave; ?></span>
-                        <?php endif; ?>
+                        <span class="action-badge" id="leaveRequestBadge" style="display:none;">0</span>
                     </div>
                 </div>
 
@@ -359,43 +199,8 @@ function time_elapsed($datetime) {
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <?php if (count($employees) > 0): ?>
-                                        <?php foreach ($employees as $employee): ?>
-                                            <?php
-                                            $joinDate = $employee['join_date'] ? date('d/m/Y', strtotime($employee['join_date'])) : 'N/A';
-                                            $statusClass = strtolower($employee['status']);
-                                            $dept = $employee['department_assigned'] ?: 'Unassigned';
-                                            $deptClass = strtolower(str_replace(' ', '', $dept));
-                                            $status = ucfirst(str_replace('-', ' ', $employee['status']));
-                                            $initials = substr($employee['first_name'], 0, 1) . substr($employee['last_name'], 0, 1);
-                                            ?>
-                                             <tr>
-                                                <td data-label="Employee">
-                                                    <div class="employee-info">
-                                                        <div class="employee-avatar"><?php echo $initials; ?></div>
-                                                        <div>
-                                                            <div class="employee-name"><?php echo htmlspecialchars($employee['first_name'] . ' ' . $employee['last_name']); ?></div>
-                                                            <div class="employee-id"><?php echo htmlspecialchars($employee['email']); ?></div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td data-label="Employee ID"><?php echo htmlspecialchars($employee['employee_id']); ?></td>
-                                                <td data-label="Department"><span class="department-badge <?php echo $deptClass; ?>"><?php echo htmlspecialchars($dept); ?></span></td>
-                                                <td data-label="Position"><?php echo htmlspecialchars($employee['position']); ?></td>
-                                                <td data-label="Join Date"><?php echo $joinDate; ?></td>
-                                                <td data-label="Status"><span class="status-badge <?php echo $statusClass; ?>"><?php echo $status; ?></span></td>
-                                                <td data-label="Actions">
-                                                    <div class="action-buttons">
-                                                        <button class="action-btn view" onclick="window.location.href='wereda_hr_employee.php?id=<?php echo $employee['id']; ?>'"><i class="fas fa-eye"></i></button>
-                                                        <button class="action-btn edit" onclick="window.location.href='wereda_hr_employee.php?id=<?php echo $employee['id']; ?>&edit=true'"><i class="fas fa-edit"></i></button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    <?php else: ?>
-                                        <tr><td colspan="7" style="text-align:center; padding: 20px;">No employees found.</td></tr>
-                                    <?php endif; ?>
+                                <tbody id="recentEmployeesBody">
+                                    <tr><td colspan="7" style="text-align:center; padding: 20px;"><div class="loading-spinner"></div> Loading employees...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -409,24 +214,18 @@ function time_elapsed($datetime) {
                     </div>
                     <div class="hr-section-body">
                         <div class="activity-timeline">
-                            <?php if (count($activities) > 0): ?>
-                                <?php foreach ($activities as $act): ?>
-                                    <div class="timeline-item">
-                                        <div class="timeline-icon" style="background: <?php echo $act['bg']; ?>; color: <?php echo $act['color']; ?>;">
-                                            <i class="fas fa-<?php echo $act['type']; ?>"></i>
-                                        </div>
-                                        <div class="timeline-content">
-                                            <div class="timeline-header">
-                                                <span class="timeline-title"><?php echo htmlspecialchars($act['title']); ?></span>
-                                                <span class="timeline-time"><?php echo time_elapsed($act['time']); ?></span>
-                                            </div>
-                                            <p class="timeline-desc"><?php echo htmlspecialchars($act['desc']); ?></p>
-                                        </div>
+                            <div class="timeline-item">
+                                <div class="timeline-icon" style="background: #4cb5ae15; color: #4cb5ae;">
+                                    <i class="fas fa-info-circle"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="timeline-header">
+                                        <span class="timeline-title">Activity Feed</span>
+                                        <span class="timeline-time">Live Updates</span>
                                     </div>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <p style="padding: 20px; color: var(--gray);">No recent activity.</p>
-                            <?php endif; ?>
+                                    <p class="timeline-desc">Recent activities will appear here as they happen.</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -442,46 +241,8 @@ function time_elapsed($datetime) {
                         </div>
                     </div>
                     <div class="hr-section-body">
-                        <div class="leave-requests">
-                            <?php if (count($leaveRequests) > 0): ?>
-                                <?php foreach ($leaveRequests as $request): ?>
-                                    <?php
-                                    $initials = substr($request['first_name'], 0, 1) . substr($request['last_name'], 0, 1);
-                                    $startDate = date('d M Y', strtotime($request['start_date']));
-                                    $endDate = date('d M Y', strtotime($request['end_date']));
-                                    $leaveType = ucfirst($request['leave_type']) . ' Leave';
-                                    ?>
-                                    <div class="leave-request-card">
-                                        <div class="leave-header">
-                                            <div class="leave-employee">
-                                                <div class="employee-avatar"><?php echo $initials; ?></div>
-                                                <div>
-                                                    <div class="employee-name"><?php echo htmlspecialchars($request['first_name'] . ' ' . $request['last_name']); ?></div>
-                                                    <div class="employee-id"><?php echo htmlspecialchars($request['department_assigned']); ?></div>
-                                                </div>
-                                            </div>
-                                            <div class="leave-type"><?php echo $leaveType; ?></div>
-                                        </div>
-                                        <div class="leave-dates">
-                                            <div class="leave-date">
-                                                <div class="leave-date-label">From</div>
-                                                <div class="leave-date-value"><?php echo $startDate; ?></div>
-                                            </div>
-                                            <div class="leave-date">
-                                                <div class="leave-date-label">To</div>
-                                                <div class="leave-date-value"><?php echo $endDate; ?></div>
-                                            </div>
-                                        </div>
-                                        <p style="margin-bottom: 15px; color: var(--gray);"><?php echo htmlspecialchars($request['reason'] ?: 'No reason provided.'); ?></p>
-                                        <div class="leave-actions">
-                                            <button class="leave-action-btn approve" onclick="approveLeave(<?php echo $request['id']; ?>)">Approve</button>
-                                            <button class="leave-action-btn reject" onclick="rejectLeave(<?php echo $request['id']; ?>)">Reject</button>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <p style="padding: 20px; color: var(--gray);">No pending leave requests.</p>
-                            <?php endif; ?>
+                        <div class="leave-requests" id="leaveRequestsList">
+                            <div class="loading-spinner"></div> Loading leave requests...
                         </div>
                     </div>
                 </div>
@@ -497,39 +258,8 @@ function time_elapsed($datetime) {
                         </div>
                     </div>
                     <div class="hr-section-body">
-                        <div class="recruitment-jobs">
-                            <?php if (count($jobPostings) > 0): ?>
-                                <?php foreach ($jobPostings as $job): ?>
-                                    <?php
-                                    $postedDate = date('d/m/Y', strtotime($job['posted_at']));
-                                    ?>
-                                    <div class="job-card">
-                                        <div class="job-header">
-                                            <div>
-                                                <div class="job-title"><?php echo htmlspecialchars($job['title']); ?></div>
-                                                <div class="job-department"><?php echo htmlspecialchars($job['department']); ?></div>
-                                            </div>
-                                            <div class="job-type"><?php echo ucfirst($job['employment_type']); ?></div>
-                                        </div>
-                                        <div class="job-details">
-                                            <div class="job-detail">
-                                                <i class="fas fa-map-marker-alt"></i>
-                                                <span><?php echo htmlspecialchars($job['location'] ?: 'Wereda Health Center'); ?></span>
-                                            </div>
-                                            <div class="job-detail">
-                                                <i class="fas fa-clock"></i>
-                                                <span>Posted: <?php echo $postedDate; ?></span>
-                                            </div>
-                                        </div>
-                                        <div class="job-actions">
-                                            <button class="job-action-btn" onclick="alert('Viewing details for <?php echo htmlspecialchars($job['title']); ?>')">View Details</button>
-                                            <button class="job-action-btn" onclick="alert('Editing <?php echo htmlspecialchars($job['title']); ?> posting')">Edit</button>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <p style="padding: 20px; color: var(--gray);">No open positions found.</p>
-                            <?php endif; ?>
+                        <div class="recruitment-jobs" id="jobPostingsList">
+                            <div class="loading-spinner"></div> Loading job postings...
                         </div>
                     </div>
                 </div>
@@ -545,43 +275,8 @@ function time_elapsed($datetime) {
                         </div>
                     </div>
                     <div class="hr-section-body">
-                        <div class="training-courses">
-                            <?php if (count($trainings) > 0): ?>
-                                <?php foreach ($trainings as $training): ?>
-                                    <?php
-                                    $sessionDate = date('d M Y', strtotime($training['session_date']));
-                                    $timeRange = substr($training['start_time'], 0, 5) . ' - ' . substr($training['end_time'], 0, 5);
-                                    ?>
-                                    <div class="training-card">
-                                        <div class="training-header">
-                                            <div>
-                                                <div class="training-title"><?php echo htmlspecialchars($training['title']); ?></div>
-                                                <div class="training-category"><?php echo htmlspecialchars($training['category'] ?? 'Professional Development'); ?></div>
-                                            </div>
-                                            <div class="training-status upcoming"><?php echo ucfirst($training['status']); ?></div>
-                                        </div>
-                                        <div class="training-details">
-                                            <div class="training-detail">
-                                                <i class="fas fa-calendar-alt"></i>
-                                                <span><?php echo $sessionDate; ?></span>
-                                            </div>
-                                            <div class="training-detail">
-                                                <i class="fas fa-clock"></i>
-                                                <span><?php echo $timeRange; ?></span>
-                                            </div>
-                                            <div class="training-detail">
-                                                <i class="fas fa-map-marker-alt"></i>
-                                                <span><?php echo htmlspecialchars($training['venue']); ?></span>
-                                            </div>
-                                        </div>
-                                        <div class="training-actions">
-                                            <button class="training-action-btn primary">Register Employees</button>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <p style="padding: 20px; color: var(--gray);">No upcoming training sessions.</p>
-                            <?php endif; ?>
+                        <div class="training-courses" id="trainingList">
+                            <div class="loading-spinner"></div> Loading training programs...
                         </div>
                     </div>
                 </div>
@@ -590,18 +285,21 @@ function time_elapsed($datetime) {
     </div>
 
     <script>
-        // Chart creation with real data from API
         document.addEventListener('DOMContentLoaded', function() {
-            if (typeof Chart !== 'undefined') {
-                loadAllCharts();
-            }
+            console.log('DOM loaded, initializing dashboard...');
+            loadDashboardData();
+            loadAllCharts();
         });
 
         function loadAllCharts() {
+            console.log('Loading all workforce analytics charts...');
+            
             // Gender Chart with real data
+            console.log('Fetching gender stats...');
             fetch('get_gender_stats.php')
                 .then(response => response.json())
                 .then(data => {
+                    console.log('Gender stats data:', data);
                     const ctx = document.getElementById('genderChart');
                     if (ctx && data.success && data.data) {
                         new Chart(ctx, {
@@ -623,9 +321,12 @@ function time_elapsed($datetime) {
                                 }
                             }
                         });
+                        console.log('✅ Gender chart loaded');
+                    } else {
+                        console.warn('Gender chart skipped - no data or canvas not found');
                     }
                 })
-                .catch(error => console.error('Gender chart error:', error));
+                .catch(error => console.error('❌ Gender chart error:', error));
 
             // Academic Chart with real data
             fetch('get_academic_stats.php')
@@ -806,6 +507,142 @@ function time_elapsed($datetime) {
                 .catch(error => console.error('Kebele chart error:', error));
         }
 
+
+        function loadDashboardData() {
+            console.log('Loading dashboard data...');
+            
+            fetch('get_wereda_dashboard_data.php')
+                .then(response => {
+                    console.log('Dashboard API response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.text();
+                })
+                .then(text => {
+                    console.log('Dashboard raw response:', text.substring(0, 200));
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('Dashboard JSON parse error:', e);
+                        console.error('Response was:', text);
+                        throw new Error('Invalid JSON: ' + e.message);
+                    }
+                })
+                .then(data => {
+                    console.log('Dashboard parsed data:', data);
+                    if (data.success) {
+                        console.log('Updating stats...');
+                        updateStats(data.stats);
+                        console.log('Rendering employees...');
+                        renderRecentEmployees(data.recent_employees);
+                        console.log('Rendering leave requests...');
+                        renderLeaveRequests(data.leave_requests);
+                        console.log('Rendering job postings...');
+                        renderJobPostings(data.job_postings);
+                        console.log('Rendering trainings...');
+                        renderTrainings(data.trainings);
+                        console.log('Dashboard loaded successfully!');
+                    } else {
+                        console.error('Dashboard API error:', data.message);
+                        alert('Dashboard Error: ' + (data.message || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Dashboard fetch error:', error);
+                    alert('Failed to load dashboard data: ' + error.message + '\nCheck console (F12) for details.');
+                });
+        }
+
+        function updateStats(stats) {
+            if (!stats) return;
+            if (document.getElementById('stat-total')) document.getElementById('stat-total').textContent = stats.totalEmployees || 0;
+            if (document.getElementById('stat-active')) document.getElementById('stat-active').textContent = stats.activeEmployees || 0;
+            if (document.getElementById('stat-leave')) document.getElementById('stat-leave').textContent = stats.onLeave || 0;
+            if (document.getElementById('stat-attendance')) document.getElementById('stat-attendance').textContent = (stats.attendanceRate || 0) + '%';
+            
+            // Update leave request badge
+            const badge = document.getElementById('leaveRequestBadge');
+            if (badge && stats.onLeave > 0) {
+                badge.textContent = stats.onLeave;
+                badge.style.display = 'inline-block';
+            }
+        }
+
+        function renderRecentEmployees(employees) {
+            const tbody = document.getElementById('recentEmployeesBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            if (!employees || employees.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 20px;">No recent employees found.</td></tr>';
+                return;
+            }
+            employees.forEach(emp => {
+                const initials = (emp.first_name[0] || '') + (emp.last_name[0] || '');
+                const deptClass = (emp.department_assigned || 'unassigned').replace(/\s+/g, '').toLowerCase();
+                const statusClass = (emp.status || 'inactive').toLowerCase();
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td data-label="Employee"><div class="employee-info"><div class="employee-avatar">${initials}</div><div><div class="employee-name">${emp.first_name} ${emp.last_name}</div><div class="employee-id">${emp.email || ''}</div></div></div></td>
+                    <td data-label="Employee ID">${emp.employee_id}</td>
+                    <td data-label="Department"><span class="department-badge ${deptClass}">${emp.department_assigned || 'Unassigned'}</span></td>
+                    <td data-label="Position">${emp.position}</td>
+                    <td data-label="Join Date">${new Date(emp.join_date).toLocaleDateString()}</td>
+                    <td data-label="Status"><span class="status-badge ${statusClass}">${emp.status}</span></td>
+                    <td data-label="Actions"><div class="action-buttons"><button class="action-btn view" onclick="window.location.href='wereda_hr_employee.php?view_id=${emp.id}'"><i class="fas fa-eye"></i></button><button class="action-btn edit" onclick="window.location.href='edit_employee.php?id=${emp.id}'"><i class="fas fa-edit"></i></button></div></td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderLeaveRequests(requests) {
+            const container = document.getElementById('leaveRequestsList');
+            if (!container) return;
+            container.innerHTML = '';
+            if (!requests || requests.length === 0) {
+                container.innerHTML = '<p style="padding: 20px; color: var(--gray);">No pending leave requests.</p>';
+                return;
+            }
+            requests.forEach(req => {
+                const initials = (req.first_name[0] || '') + (req.last_name[0] || '');
+                const div = document.createElement('div');
+                div.className = 'leave-request-card';
+                div.innerHTML = `<div class="leave-header"><div class="leave-employee"><div class="employee-avatar">${initials}</div><div><div class="employee-name">${req.first_name} ${req.last_name}</div><div class="employee-id">${req.department_assigned}</div></div></div><div class="leave-type">${req.leave_type} Leave</div></div><div class="leave-dates"><div class="leave-date"><div class="leave-date-label">From</div><div class="leave-date-value">${new Date(req.start_date).toLocaleDateString()}</div></div><div class="leave-date"><div class="leave-date-label">To</div><div class="leave-date-value">${new Date(req.end_date).toLocaleDateString()}</div></div></div><p style="margin-bottom: 15px; color: var(--gray);">${req.reason || 'No reason provided.'}</p><div class="leave-actions"><button class="leave-action-btn approve" onclick="approveLeave(${req.id})">Approve</button><button class="leave-action-btn reject" onclick="rejectLeave(${req.id})">Reject</button></div>`;
+                container.appendChild(div);
+            });
+        }
+
+        function renderJobPostings(jobs) {
+            const container = document.getElementById('jobPostingsList');
+            if(!container) return;
+            container.innerHTML = '';
+            if (!jobs || jobs.length === 0) {
+                container.innerHTML = '<p style="padding: 20px; color: var(--gray);">No open positions found.</p>';
+                return;
+            }
+            jobs.forEach(job => {
+                const div = document.createElement('div');
+                div.className = 'job-card';
+                div.innerHTML = `<div class="job-header"><div><div class="job-title">${job.title}</div><div class="job-department">${job.department}</div></div><div class="job-type">${job.employment_type}</div></div><div class="job-details"><div class="job-detail"><i class="fas fa-map-marker-alt"></i> <span>${job.location || 'Wereda Health Center'}</span></div><div class="job-detail"><i class="fas fa-clock"></i> <span>Posted: ${new Date(job.posted_at).toLocaleDateString()}</span></div></div><div class="job-actions"><button class="job-action-btn">View Details</button><button class="job-action-btn">Edit</button></div>`;
+                container.appendChild(div);
+            });
+        }
+
+        function renderTrainings(trainings) {
+            const container = document.getElementById('trainingList');
+            if(!container) return;
+            container.innerHTML = '';
+            if (!trainings || trainings.length === 0) {
+                container.innerHTML = '<p style="padding: 20px; color: var(--gray);">No upcoming training sessions.</p>';
+                return;
+            }
+            trainings.forEach(training => {
+                const div = document.createElement('div');
+                div.className = 'training-card';
+                div.innerHTML = `<div class="training-header"><div><div class="training-title">${training.title}</div><div class="training-category">${training.category || 'Professional Development'}</div></div><div class="training-status upcoming">Upcoming</div></div><div class="training-details"><div class="training-detail"><i class="fas fa-calendar-alt"></i> <span>${new Date(training.session_date).toLocaleDateString()}</span></div><div class="training-detail"><i class="fas fa-clock"></i> <span>${training.start_time.substring(0,5)} - ${training.end_time.substring(0,5)}</span></div><div class="training-detail"><i class="fas fa-map-marker-alt"></i> <span>${training.venue}</span></div></div><div class="training-actions"><button class="training-action-btn primary">Register Employees</button></div>`;
+                container.appendChild(div);
+            });
+        }
+        
         // Leave request functions
         function approveLeave(leaveId) {
             if (confirm('Approve this leave request?')) {
@@ -818,7 +655,7 @@ function time_elapsed($datetime) {
                 .then(data => {
                     if (data.success) {
                         alert('Leave request approved successfully!');
-                        location.reload();
+                        loadDashboardData();
                     } else {
                         alert('Error: ' + data.message);
                     }
@@ -841,7 +678,7 @@ function time_elapsed($datetime) {
                 .then(data => {
                     if (data.success) {
                         alert('Leave request rejected successfully!');
-                        location.reload();
+                        loadDashboardData();
                     } else {
                         alert('Error: ' + data.message);
                     }

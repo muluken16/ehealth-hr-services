@@ -92,6 +92,7 @@ $conn->close();
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -99,70 +100,13 @@ $conn->close();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../style/styleho.css">
 </head>
+
 <body>
     <div class="admin-container">
         <!-- Mobile Overlay -->
         <div class="mobile-overlay" id="mobileOverlay"></div>
 
-        <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <a href="wereda_ho_dashboard.php" class="logo">
-                    <i class="fas fa-heartbeat"></i>
-                    <span class="logo-text">HealthFirst</span>
-                </a>
-                <button class="toggle-sidebar" id="toggleSidebar">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-            </div>
-
-            <nav class="sidebar-menu">
-                <ul>
-                    <li class="menu-item">
-                        <a href="wereda_ho_dashboard.php">
-                            <i class="fas fa-tachometer-alt"></i>
-                            <span class="menu-text">Dashboard</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="wereda_patients.php">
-                            <i class="fas fa-user-injured"></i>
-                            <span class="menu-text">Patients</span>
-                        </a>
-                    </li>
-                    <li class="menu-item active">
-                        <a href="wereda_appointments.php">
-                            <i class="fas fa-calendar-check"></i>
-                            <span class="menu-text">Appointments</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="wereda_inventory.php">
-                            <i class="fas fa-pills"></i>
-                            <span class="menu-text">Inventory</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="wereda_reports.php">
-                            <i class="fas fa-chart-bar"></i>
-                            <span class="menu-text">Reports</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="wereda_emergency.php">
-                            <i class="fas fa-ambulance"></i>
-                            <span class="menu-text">Emergency</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="wereda_qa.php">
-                            <i class="fas fa-clipboard-check"></i>
-                            <span class="menu-text">Quality Assurance</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        </aside>
+        <?php include 'sidebar.php'; ?>
 
         <!-- Main Content -->
         <main class="main-content">
@@ -231,7 +175,8 @@ $conn->close();
                             <div class="form-row">
                                 <div class="form-group">
                                     <label>Date</label>
-                                    <input type="date" name="date" value="<?php echo htmlspecialchars($date_filter); ?>">
+                                    <input type="date" name="date"
+                                        value="<?php echo htmlspecialchars($date_filter); ?>">
                                 </div>
                                 <div class="form-group">
                                     <label>Status</label>
@@ -248,9 +193,9 @@ $conn->close();
                                     <select name="kebele">
                                         <option value="">All Kebeles</option>
                                         <?php while ($kebele = $kebeles->fetch_assoc()): ?>
-                                        <option value="<?php echo htmlspecialchars($kebele['kebele']); ?>" <?php echo $kebele_filter == $kebele['kebele'] ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($kebele['kebele']); ?>
-                                        </option>
+                                            <option value="<?php echo htmlspecialchars($kebele['kebele']); ?>" <?php echo $kebele_filter == $kebele['kebele'] ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($kebele['kebele']); ?>
+                                            </option>
                                         <?php endwhile; ?>
                                     </select>
                                 </div>
@@ -284,27 +229,34 @@ $conn->close();
                                 </thead>
                                 <tbody>
                                     <?php while ($appt = $appointments->fetch_assoc()): ?>
-                                    <tr>
-                                        <td><?php echo htmlspecialchars($appt['first_name'] . ' ' . $appt['last_name']); ?></td>
-                                        <td><?php echo htmlspecialchars($appt['doctor_name']); ?></td>
-                                        <td><?php echo date('M j, Y g:i A', strtotime($appt['appointment_date'] . ' ' . $appt['appointment_time'])); ?></td>
-                                        <td><?php echo htmlspecialchars($appt['department']); ?></td>
-                                        <td><?php echo htmlspecialchars($appt['kebele']); ?></td>
-                                        <td><span class="status-badge <?php echo $appt['status']; ?>"><?php echo ucfirst($appt['status']); ?></span></td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button class="action-btn view" onclick="viewAppointment(<?php echo $appt['id']; ?>)">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
-                                                <button class="action-btn edit" onclick="editAppointment(<?php echo $appt['id']; ?>)">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <button class="action-btn delete" onclick="deleteAppointment(<?php echo $appt['id']; ?>)">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                        <tr>
+                                            <td><?php echo htmlspecialchars($appt['first_name'] . ' ' . $appt['last_name']); ?>
+                                            </td>
+                                            <td><?php echo htmlspecialchars($appt['doctor_name']); ?></td>
+                                            <td><?php echo date('M j, Y g:i A', strtotime($appt['appointment_date'] . ' ' . $appt['appointment_time'])); ?>
+                                            </td>
+                                            <td><?php echo htmlspecialchars($appt['department']); ?></td>
+                                            <td><?php echo htmlspecialchars($appt['kebele']); ?></td>
+                                            <td><span
+                                                    class="status-badge <?php echo $appt['status']; ?>"><?php echo ucfirst($appt['status']); ?></span>
+                                            </td>
+                                            <td>
+                                                <div class="action-buttons">
+                                                    <button class="action-btn view"
+                                                        onclick="viewAppointment(<?php echo $appt['id']; ?>)">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    <button class="action-btn edit"
+                                                        onclick="editAppointment(<?php echo $appt['id']; ?>)">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button class="action-btn delete"
+                                                        onclick="deleteAppointment(<?php echo $appt['id']; ?>)">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
                                     <?php endwhile; ?>
                                 </tbody>
                             </table>
@@ -332,9 +284,9 @@ $conn->close();
                             <?php
                             $patients->data_seek(0);
                             while ($patient = $patients->fetch_assoc()): ?>
-                            <option value="<?php echo $patient['id']; ?>">
-                                <?php echo htmlspecialchars($patient['first_name'] . ' ' . $patient['last_name']); ?>
-                            </option>
+                                <option value="<?php echo $patient['id']; ?>">
+                                    <?php echo htmlspecialchars($patient['first_name'] . ' ' . $patient['last_name']); ?>
+                                </option>
                             <?php endwhile; ?>
                         </select>
                     </div>
@@ -405,9 +357,9 @@ $conn->close();
                             <?php
                             $patients->data_seek(0);
                             while ($patient = $patients->fetch_assoc()): ?>
-                            <option value="<?php echo $patient['id']; ?>">
-                                <?php echo htmlspecialchars($patient['first_name'] . ' ' . $patient['last_name']); ?>
-                            </option>
+                                <option value="<?php echo $patient['id']; ?>">
+                                    <?php echo htmlspecialchars($patient['first_name'] . ' ' . $patient['last_name']); ?>
+                                </option>
                             <?php endwhile; ?>
                         </select>
                     </div>
@@ -527,4 +479,5 @@ $conn->close();
         });
     </script>
 </body>
+
 </html>

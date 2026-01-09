@@ -187,89 +187,9 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
                         </div>
                     </div>
                     <div class="hr-section-body">
-                        <div class="leave-requests">
-                            <div class="leave-request-card">
-                                <div class="leave-header">
-                                    <div class="leave-employee">
-                                        <div class="employee-avatar">SJ</div>
-                                        <div>
-                                            <div class="employee-name">Dr. Sarah Johnson</div>
-                                            <div class="employee-id">Medical Department</div>
-                                        </div>
-                                    </div>
-                                    <div class="leave-type">Annual Leave</div>
-                                </div>
-                                <div class="leave-dates">
-                                    <div class="leave-date">
-                                        <div class="leave-date-label">From</div>
-                                        <div class="leave-date-value">15 Dec 2023</div>
-                                    </div>
-                                    <div class="leave-date">
-                                        <div class="leave-date-label">To</div>
-                                        <div class="leave-date-value">22 Dec 2023</div>
-                                    </div>
-                                </div>
-                                <p style="margin-bottom: 15px; color: var(--gray);">Family vacation planned for the holidays.</p>
-                                <div class="leave-actions">
-                                    <button class="leave-action-btn approve">Approve</button>
-                                    <button class="leave-action-btn reject">Reject</button>
-                                </div>
-                            </div>
-                            
-                            <div class="leave-request-card">
-                                <div class="leave-header">
-                                    <div class="leave-employee">
-                                        <div class="employee-avatar">MC</div>
-                                        <div>
-                                            <div class="employee-name">Dr. Michael Chen</div>
-                                            <div class="employee-id">Cardiology</div>
-                                        </div>
-                                    </div>
-                                    <div class="leave-type">Sick Leave</div>
-                                </div>
-                                <div class="leave-dates">
-                                    <div class="leave-date">
-                                        <div class="leave-date-label">From</div>
-                                        <div class="leave-date-value">10 Dec 2023</div>
-                                    </div>
-                                    <div class="leave-date">
-                                        <div class="leave-date-label">To</div>
-                                        <div class="leave-date-value">12 Dec 2023</div>
-                                    </div>
-                                </div>
-                                <p style="margin-bottom: 15px; color: var(--gray);">Medical certificate attached for flu.</p>
-                                <div class="leave-actions">
-                                    <button class="leave-action-btn approve">Approve</button>
-                                    <button class="leave-action-btn reject">Reject</button>
-                                </div>
-                            </div>
-                            
-                            <div class="leave-request-card">
-                                <div class="leave-header">
-                                    <div class="leave-employee">
-                                        <div class="employee-avatar">LB</div>
-                                        <div>
-                                            <div class="employee-name">Lisa Brown</div>
-                                            <div class="employee-id">Lab Technician</div>
-                                        </div>
-                                    </div>
-                                    <div class="leave-type">Maternity Leave</div>
-                                </div>
-                                <div class="leave-dates">
-                                    <div class="leave-date">
-                                        <div class="leave-date-label">From</div>
-                                        <div class="leave-date-value">01 Jan 2024</div>
-                                    </div>
-                                    <div class="leave-date">
-                                        <div class="leave-date-label">To</div>
-                                        <div class="leave-date-value">01 Apr 2024</div>
-                                    </div>
-                                </div>
-                                <p style="margin-bottom: 15px; color: var(--gray);">Expected due date in December.</p>
-                                <div class="leave-actions">
-                                    <button class="leave-action-btn approve">Approve</button>
-                                    <button class="leave-action-btn reject">Reject</button>
-                                </div>
+                        <div class="leave-requests" id="leaveRequestsList">
+                            <div style="text-align:center; padding: 40px; color: var(--gray);">
+                                <i class="fas fa-circle-notch fa-spin"></i> Loading requests...
                             </div>
                         </div>
                     </div>
@@ -289,89 +209,9 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
                         </div>
                     </div>
                     <div class="hr-section-body">
-                        <div class="recruitment-jobs">
-                            <div class="job-card">
-                                <div class="job-header">
-                                    <div>
-                                        <div class="job-title">Senior Nurse</div>
-                                        <div class="job-department">Medical Department</div>
-                                    </div>
-                                    <div class="job-type">Full-time</div>
-                                </div>
-                                <div class="job-details">
-                                    <div class="job-detail">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        <span>Main Hospital</span>
-                                    </div>
-                                    <div class="job-detail">
-                                        <i class="fas fa-clock"></i>
-                                        <span>Posted: 2 days ago</span>
-                                    </div>
-                                    <div class="job-detail">
-                                        <i class="fas fa-users"></i>
-                                        <span>12 Applications</span>
-                                    </div>
-                                </div>
-                                <div class="job-actions">
-                                    <button class="job-action-btn">View Details</button>
-                                    <button class="job-action-btn">Edit</button>
-                                </div>
-                            </div>
-                            
-                            <div class="job-card">
-                                <div class="job-header">
-                                    <div>
-                                        <div class="job-title">Medical Receptionist</div>
-                                        <div class="job-department">Administration</div>
-                                    </div>
-                                    <div class="job-type">Part-time</div>
-                                </div>
-                                <div class="job-details">
-                                    <div class="job-detail">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        <span>North Branch</span>
-                                    </div>
-                                    <div class="job-detail">
-                                        <i class="fas fa-clock"></i>
-                                        <span>Posted: 1 week ago</span>
-                                    </div>
-                                    <div class="job-detail">
-                                        <i class="fas fa-users"></i>
-                                        <span>8 Applications</span>
-                                    </div>
-                                </div>
-                                <div class="job-actions">
-                                    <button class="job-action-btn">View Details</button>
-                                    <button class="job-action-btn">Edit</button>
-                                </div>
-                            </div>
-                            
-                            <div class="job-card">
-                                <div class="job-header">
-                                    <div>
-                                        <div class="job-title">IT Support Specialist</div>
-                                        <div class="job-department">Technical</div>
-                                    </div>
-                                    <div class="job-type">Full-time</div>
-                                </div>
-                                <div class="job-details">
-                                    <div class="job-detail">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        <span>Main Hospital</span>
-                                    </div>
-                                    <div class="job-detail">
-                                        <i class="fas fa-clock"></i>
-                                        <span>Posted: 3 days ago</span>
-                                    </div>
-                                    <div class="job-detail">
-                                        <i class="fas fa-users"></i>
-                                        <span>5 Applications</span>
-                                    </div>
-                                </div>
-                                <div class="job-actions">
-                                    <button class="job-action-btn">View Details</button>
-                                    <button class="job-action-btn">Edit</button>
-                                </div>
+                        <div class="recruitment-jobs" id="recruitmentList">
+                            <div style="text-align:center; padding: 40px; color: var(--gray);">
+                                <i class="fas fa-circle-notch fa-spin"></i> Loading jobs...
                             </div>
                         </div>
                     </div>
@@ -391,97 +231,9 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
                         </div>
                     </div>
                     <div class="hr-section-body">
-                        <div class="training-courses">
-                            <div class="training-card">
-                                <div class="training-header">
-                                    <div>
-                                        <div class="training-title">Emergency Response Training</div>
-                                        <div class="training-category">Medical & Safety</div>
-                                    </div>
-                                    <div class="training-status upcoming">Upcoming</div>
-                                </div>
-                                <div class="training-details">
-                                    <div class="training-detail">
-                                        <i class="fas fa-calendar-alt"></i>
-                                        <span>Date: 15 Dec 2023</span>
-                                    </div>
-                                    <div class="training-detail">
-                                        <i class="fas fa-clock"></i>
-                                        <span>Time: 9:00 AM - 4:00 PM</span>
-                                    </div>
-                                    <div class="training-detail">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        <span>Venue: Conference Room A</span>
-                                    </div>
-                                    <div class="training-detail">
-                                        <i class="fas fa-user-tie"></i>
-                                        <span>Trainer: Dr. James Lee</span>
-                                    </div>
-                                </div>
-                                <div class="training-participants">
-                                    <span>Participants:</span>
-                                    <div class="participant-avatars">
-                                        <div class="participant-avatar">SJ</div>
-                                        <div class="participant-avatar">MC</div>
-                                        <div class="participant-avatar">LB</div>
-                                        <div class="participant-avatar">+5</div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="training-card">
-                                <div class="training-header">
-                                    <div>
-                                        <div class="training-title">HIPAA Compliance Training</div>
-                                        <div class="training-category">Legal & Compliance</div>
-                                    </div>
-                                    <div class="training-status ongoing">Ongoing</div>
-                                </div>
-                                <div class="training-details">
-                                    <div class="training-detail">
-                                        <i class="fas fa-calendar-alt"></i>
-                                        <span>Date: 01-15 Dec 2023</span>
-                                    </div>
-                                    <div class="training-detail">
-                                        <i class="fas fa-clock"></i>
-                                        <span>Format: Online Self-paced</span>
-                                    </div>
-                                    <div class="training-detail">
-                                        <i class="fas fa-user-tie"></i>
-                                        <span>Provider: Compliance Solutions Inc.</span>
-                                    </div>
-                                </div>
-                                <div class="training-participants">
-                                    <span>Progress: 24/42 completed</span>
-                                </div>
-                            </div>
-                            
-                            <div class="training-card">
-                                <div class="training-header">
-                                    <div>
-                                        <div class="training-title">New Medical Software Training</div>
-                                        <div class="training-category">Technical</div>
-                                    </div>
-                                    <div class="training-status completed">Completed</div>
-                                </div>
-                                <div class="training-details">
-                                    <div class="training-detail">
-                                        <i class="fas fa-calendar-alt"></i>
-                                        <span>Date: 20 Nov 2023</span>
-                                    </div>
-                                    <div class="training-detail">
-                                        <i class="fas fa-clock"></i>
-                                        <span>Duration: 3 hours</span>
-                                    </div>
-                                    <div class="training-detail">
-                                        <i class="fas fa-user-tie"></i>
-                                        <span>Trainer: Robert Smith</span>
-                                    </div>
-                                    <div class="training-detail">
-                                        <i class="fas fa-check-circle"></i>
-                                        <span>28 participants attended</span>
-                                    </div>
-                                </div>
+                        <div class="training-courses" id="trainingList">
+                            <div style="text-align:center; padding: 40px; color: var(--gray);">
+                                <i class="fas fa-circle-notch fa-spin"></i> Loading trainings...
                             </div>
                         </div>
                     </div>

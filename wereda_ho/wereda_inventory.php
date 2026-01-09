@@ -87,6 +87,7 @@ $conn->close();
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -94,70 +95,13 @@ $conn->close();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../style/styleho.css">
 </head>
+
 <body>
     <div class="admin-container">
         <!-- Mobile Overlay -->
         <div class="mobile-overlay" id="mobileOverlay"></div>
 
-        <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <a href="wereda_ho_dashboard.php" class="logo">
-                    <i class="fas fa-heartbeat"></i>
-                    <span class="logo-text">HealthFirst</span>
-                </a>
-                <button class="toggle-sidebar" id="toggleSidebar">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-            </div>
-
-            <nav class="sidebar-menu">
-                <ul>
-                    <li class="menu-item">
-                        <a href="wereda_ho_dashboard.php">
-                            <i class="fas fa-tachometer-alt"></i>
-                            <span class="menu-text">Dashboard</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="wereda_patients.php">
-                            <i class="fas fa-user-injured"></i>
-                            <span class="menu-text">Patients</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="wereda_appointments.php">
-                            <i class="fas fa-calendar-check"></i>
-                            <span class="menu-text">Appointments</span>
-                        </a>
-                    </li>
-                    <li class="menu-item active">
-                        <a href="wereda_inventory.php">
-                            <i class="fas fa-pills"></i>
-                            <span class="menu-text">Inventory</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="wereda_reports.php">
-                            <i class="fas fa-chart-bar"></i>
-                            <span class="menu-text">Reports</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="wereda_emergency.php">
-                            <i class="fas fa-ambulance"></i>
-                            <span class="menu-text">Emergency</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="wereda_qa.php">
-                            <i class="fas fa-clipboard-check"></i>
-                            <span class="menu-text">Quality Assurance</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        </aside>
+        <?php include 'sidebar.php'; ?>
 
         <!-- Main Content -->
         <main class="main-content">
@@ -229,9 +173,9 @@ $conn->close();
                                     <select name="category">
                                         <option value="">All Categories</option>
                                         <?php while ($category = $categories->fetch_assoc()): ?>
-                                        <option value="<?php echo htmlspecialchars($category['category']); ?>" <?php echo $category_filter == $category['category'] ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($category['category']); ?>
-                                        </option>
+                                            <option value="<?php echo htmlspecialchars($category['category']); ?>" <?php echo $category_filter == $category['category'] ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($category['category']); ?>
+                                            </option>
                                         <?php endwhile; ?>
                                     </select>
                                 </div>
@@ -240,9 +184,9 @@ $conn->close();
                                     <select name="kebele">
                                         <option value="">All Kebeles</option>
                                         <?php while ($kebele = $kebeles->fetch_assoc()): ?>
-                                        <option value="<?php echo htmlspecialchars($kebele['kebele']); ?>" <?php echo $kebele_filter == $kebele['kebele'] ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($kebele['kebele']); ?>
-                                        </option>
+                                            <option value="<?php echo htmlspecialchars($kebele['kebele']); ?>" <?php echo $kebele_filter == $kebele['kebele'] ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($kebele['kebele']); ?>
+                                            </option>
                                         <?php endwhile; ?>
                                     </select>
                                 </div>
@@ -282,36 +226,40 @@ $conn->close();
                                 </thead>
                                 <tbody>
                                     <?php while ($item = $inventory->fetch_assoc()): ?>
-                                    <tr>
-                                        <td><?php echo htmlspecialchars($item['item_name']); ?></td>
-                                        <td><?php echo htmlspecialchars($item['category']); ?></td>
-                                        <td><?php echo number_format($item['quantity']); ?></td>
-                                        <td><?php echo htmlspecialchars($item['unit']); ?></td>
-                                        <td><?php echo $item['expiry_date'] ? date('M j, Y', strtotime($item['expiry_date'])) : 'N/A'; ?></td>
-                                        <td><?php echo htmlspecialchars($item['kebele']); ?></td>
-                                        <td>
-                                            <?php if ($item['quantity'] <= $item['min_stock_level']): ?>
-                                                <span class="status-badge warning">Low Stock</span>
-                                            <?php elseif ($item['expiry_date'] && strtotime($item['expiry_date']) < time() + (30 * 24 * 60 * 60)): ?>
-                                                <span class="status-badge danger">Expiring Soon</span>
-                                            <?php else: ?>
-                                                <span class="status-badge success">In Stock</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button class="action-btn view" onclick="viewItem(<?php echo $item['id']; ?>)">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
-                                                <button class="action-btn edit" onclick="editItem(<?php echo $item['id']; ?>)">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <button class="action-btn delete" onclick="deleteItem(<?php echo $item['id']; ?>)">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                        <tr>
+                                            <td><?php echo htmlspecialchars($item['item_name']); ?></td>
+                                            <td><?php echo htmlspecialchars($item['category']); ?></td>
+                                            <td><?php echo number_format($item['quantity']); ?></td>
+                                            <td><?php echo htmlspecialchars($item['unit']); ?></td>
+                                            <td><?php echo $item['expiry_date'] ? date('M j, Y', strtotime($item['expiry_date'])) : 'N/A'; ?>
+                                            </td>
+                                            <td><?php echo htmlspecialchars($item['kebele']); ?></td>
+                                            <td>
+                                                <?php if ($item['quantity'] <= $item['min_stock_level']): ?>
+                                                    <span class="status-badge warning">Low Stock</span>
+                                                <?php elseif ($item['expiry_date'] && strtotime($item['expiry_date']) < time() + (30 * 24 * 60 * 60)): ?>
+                                                    <span class="status-badge danger">Expiring Soon</span>
+                                                <?php else: ?>
+                                                    <span class="status-badge success">In Stock</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <div class="action-buttons">
+                                                    <button class="action-btn view"
+                                                        onclick="viewItem(<?php echo $item['id']; ?>)">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    <button class="action-btn edit"
+                                                        onclick="editItem(<?php echo $item['id']; ?>)">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button class="action-btn delete"
+                                                        onclick="deleteItem(<?php echo $item['id']; ?>)">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
                                     <?php endwhile; ?>
                                 </tbody>
                             </table>
@@ -531,4 +479,5 @@ $conn->close();
         });
     </script>
 </body>
+
 </html>
