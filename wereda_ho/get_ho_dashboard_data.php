@@ -68,7 +68,28 @@ try {
         }
     }
 
-    // 4. Mock Activities
+    // 4. Detailed Kebele Analytics (Role and Status Breakdown)
+    $kebele_analytics = [];
+    $res_ka = $conn->query("SELECT kebele, 
+                                  COUNT(*) as total,
+                                  SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
+                                  SUM(CASE WHEN status = 'on_leave' THEN 1 ELSE 0 END) as on_leave,
+                                  SUM(CASE WHEN position LIKE '%Doctor%' THEN 1 ELSE 0 END) as doctors,
+                                  SUM(CASE WHEN position LIKE '%Nurse%' THEN 1 ELSE 0 END) as nurses,
+                                  SUM(CASE WHEN position LIKE '%Health Officer%' THEN 1 ELSE 0 END) as ho_staff,
+                                  SUM(CASE WHEN position LIKE '%Midwife%' THEN 1 ELSE 0 END) as midwives
+                           FROM employees 
+                           WHERE woreda = '$user_woreda_escaped' 
+                           GROUP BY kebele 
+                           ORDER BY total DESC");
+    if ($res_ka) {
+        while ($row = $res_ka->fetch_assoc()) {
+            $kebele_analytics[] = $row;
+        }
+    }
+    $response['kebele_analytics'] = $kebele_analytics;
+
+    // 5. Mock Activities
     $response['activities'] = [
         ['type' => 'user-plus', 'title' => 'New Staff Registered', 'desc' => 'Medical staff joined Kebele center', 'time' => '1 hour ago'],
         ['type' => 'check-circle', 'title' => 'Inventory Updated', 'desc' => 'Medical supplies replenished', 'time' => '3 hours ago'],

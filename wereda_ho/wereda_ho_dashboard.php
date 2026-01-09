@@ -232,7 +232,8 @@ $kebele_list = $conn->query("SELECT DISTINCT kebele FROM employees WHERE woreda 
                         <h2 style="margin: 0 0 10px 0; font-size: 1.8rem;">Central Health Command</h2>
                         <p style="margin: 0; opacity: 0.9; font-weight: 600;">Managing
                             <?php echo htmlspecialchars($user_woreda); ?> Workforce: Woreda HR & All Kebele Health
-                            Units.</p>
+                            Units.
+                        </p>
                     </div>
                     <div style="text-align: right;">
                         <span
@@ -305,6 +306,40 @@ $kebele_list = $conn->query("SELECT DISTINCT kebele FROM employees WHERE woreda 
                                     <h3 class="section-title">Staff Roles</h3>
                                 </div>
                                 <div style="padding: 20px; height: 300px;"><canvas id="roleChart"></canvas></div>
+                            </div>
+                        </div>
+
+                        <div class="section-box" style="margin-bottom: 25px;">
+                            <div class="section-header">
+                                <h3 class="section-title">Kebele Workforce Performance</h3>
+                                <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">Tabular
+                                    Overview</span>
+                            </div>
+                            <div style="padding: 0; overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <thead style="background: #f8fafc;">
+                                        <tr>
+                                            <th
+                                                style="padding: 12px 25px; text-align: left; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">
+                                                Kebele Unit</th>
+                                            <th
+                                                style="padding: 12px 25px; text-align: center; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">
+                                                Total Staff</th>
+                                            <th
+                                                style="padding: 12px 25px; text-align: center; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">
+                                                Active Duty</th>
+                                            <th
+                                                style="padding: 12px 25px; text-align: center; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">
+                                                On Leave</th>
+                                            <th
+                                                style="padding: 12px 25px; text-align: center; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">
+                                                Ratio</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="kebelePerformanceBody">
+                                        <!-- Populated via JS -->
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
 
@@ -414,6 +449,30 @@ $kebele_list = $conn->query("SELECT DISTINCT kebele FROM employees WHERE woreda 
             document.getElementById('stat-leave').textContent = data.stats.onLeave;
             document.getElementById('stat-kebeles').textContent = data.stats.totalKebeles;
 
+            // Kebele Analytics Table
+            const kaBody = document.getElementById('kebelePerformanceBody');
+            kaBody.innerHTML = '';
+            (data.kebele_analytics || []).forEach(ka => {
+                const ratio = ka.total > 0 ? Math.round((ka.active / ka.total) * 100) : 0;
+                kaBody.innerHTML += `
+                    <tr style="border-bottom: 1px solid #f8fafc;">
+                        <td style="padding: 12px 25px; font-weight: 700; color: var(--primary); font-size: 0.85rem;">
+                            <i class="fas fa-unit" style="margin-right:8px; color:var(--secondary);"></i>${ka.kebele || 'Woreda Office'}
+                        </td>
+                        <td style="padding: 12px 25px; text-align: center; font-weight: 800; color: var(--text-main); font-size: 0.85rem;">${ka.total}</td>
+                        <td style="padding: 12px 25px; text-align: center; font-weight: 700; color: #10b981; font-size: 0.85rem;">${ka.active}</td>
+                        <td style="padding: 12px 25px; text-align: center; font-weight: 700; color: #ef4444; font-size: 0.85rem;">${ka.on_leave}</td>
+                        <td style="padding: 12px 25px; text-align: center;">
+                            <div style="width:100px; height:6px; background:#f1f5f9; border-radius:10px; margin: 0 auto; overflow:hidden;">
+                                <div style="width:${ratio}%; height:100%; background:var(--secondary);"></div>
+                            </div>
+                            <small style="font-size:0.65rem; font-weight:800; color:var(--text-muted);">${ratio}% Active</small>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            // Employee Table
             const body = document.getElementById('staffBody');
             body.innerHTML = '';
             (data.recent_employees || []).forEach(emp => {

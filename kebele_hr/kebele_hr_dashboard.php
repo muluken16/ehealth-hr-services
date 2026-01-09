@@ -9,6 +9,7 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,20 +18,21 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
     <link rel="stylesheet" href="../style/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
+
 <body>
     <div class="hr-container">
         <!-- Mobile Overlay -->
         <div class="mobile-overlay" id="mobileOverlay"></div>
-        
+
         <!-- Sidebar -->
         <?php include 'sidebar.php'; ?>
 
         <!-- Main Content -->
         <main class="main-content">
             <!-- Header -->
-            <?php 
-                $page_title = "Kebele HR Dashboard";
-                include 'navbar.php'; 
+            <?php
+            $page_title = "Kebele HR Dashboard";
+            include 'navbar.php';
             ?>
 
             <!-- HR Dashboard -->
@@ -46,7 +48,7 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
                             <p>Total Employees</p>
                         </div>
                     </div>
-                    
+
                     <div class="hr-stat-card vacancy">
                         <div class="hr-stat-icon">
                             <i class="fas fa-user-plus"></i>
@@ -56,7 +58,7 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
                             <p>Open Positions</p>
                         </div>
                     </div>
-                    
+
                     <div class="hr-stat-card on-leave">
                         <div class="hr-stat-icon">
                             <i class="fas fa-umbrella-beach"></i>
@@ -66,13 +68,13 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
                             <p>On Leave Today</p>
                         </div>
                     </div>
-                    
+
                     <div class="hr-stat-card attendance">
                         <div class="hr-stat-icon">
                             <i class="fas fa-calendar-check"></i>
                         </div>
                         <div class="hr-stat-info">
-                            <h3>94%</h3>
+                            <h3 id="attendanceRate">94%</h3>
                             <p>Attendance Rate</p>
                         </div>
                     </div>
@@ -103,22 +105,38 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
                     <div class="hr-action-btn" id="leaveRequestsBtn">
                         <i class="fas fa-clipboard-list"></i>
                         <span>Leave Requests</span>
-                        <span style="font-size: 0.8rem; margin-top: 5px; color: var(--accent);" id="pendingLeaveCount">0 pending</span>
+                        <span style="font-size: 0.8rem; margin-top: 5px; color: var(--accent);" id="pendingLeaveCount">0
+                            pending</span>
                     </div>
                 </div>
 
-                 <!-- HR Analytics Section -->
-                 <div class="hr-section" id="analyticsSection">
+                <!-- HR Analytics Section -->
+                <div class="hr-section" id="analyticsSection">
                     <div class="hr-section-header">
-                        <h2 class="hr-section-title">Kebele Workforce Analytics</h2>
+                        <h2 class="hr-section-title">Kebele Workforce Analytics <span
+                                style="font-size: 0.8rem; font-weight: normal; color: var(--gray); margin-left: 10px;">(Updated:
+                                <?php echo date('M d, Y'); ?>)</span></h2>
                     </div>
                     <div class="hr-section-body">
-                        <div class="charts-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                        <div class="charts-container"
+                            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                            <div class="chart-container-premium">
+                                <canvas id="attendanceTrendChart"></canvas>
+                            </div>
                             <div class="chart-container-premium">
                                 <canvas id="genderChart"></canvas>
                             </div>
                             <div class="chart-container-premium">
                                 <canvas id="academicChart"></canvas>
+                            </div>
+                            <div class="chart-container-premium">
+                                <canvas id="ageChart"></canvas>
+                            </div>
+                            <div class="chart-container-premium">
+                                <canvas id="experienceChart"></canvas>
+                            </div>
+                            <div class="chart-container-premium">
+                                <canvas id="salaryChart"></canvas>
                             </div>
                             <div class="chart-container-premium">
                                 <canvas id="departmentChart"></canvas>
@@ -163,7 +181,8 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
                                 <tbody id="employeeTableBody">
                                     <tr>
                                         <td colspan="7" style="text-align:center; padding: 50px;">
-                                            <i class="fas fa-circle-notch fa-spin fa-2x" style="color: var(--primary); margin-bottom: 10px;"></i>
+                                            <i class="fas fa-circle-notch fa-spin fa-2x"
+                                                style="color: var(--primary); margin-bottom: 10px;"></i>
                                             <p>Loading recent employees...</p>
                                         </td>
                                     </tr>
@@ -290,7 +309,7 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
         <div class="modal-content">
             <span class="close-modal" id="closeJobModal">&times;</span>
             <h2 class="modal-title">Post New Job Opening</h2>
-            
+
             <form id="jobForm">
                 <div class="form-row">
                     <div class="form-group">
@@ -308,7 +327,7 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
                         </select>
                     </div>
                 </div>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="jobType">Employment Type</label>
@@ -323,7 +342,7 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
                         <input type="text" id="jobLocation">
                     </div>
                 </div>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="salaryRange">Salary Range</label>
@@ -334,17 +353,19 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
                         <input type="date" id="applicationDeadline">
                     </div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="jobDescription">Job Description *</label>
-                    <textarea id="jobDescription" required placeholder="Describe the role, responsibilities, and requirements..."></textarea>
+                    <textarea id="jobDescription" required
+                        placeholder="Describe the role, responsibilities, and requirements..."></textarea>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="qualifications">Qualifications & Requirements</label>
-                    <textarea id="qualifications" placeholder="List required education, experience, and skills..."></textarea>
+                    <textarea id="qualifications"
+                        placeholder="List required education, experience, and skills..."></textarea>
                 </div>
-                
+
                 <div class="form-actions">
                     <button type="submit" class="submit-btn">Post Job Opening</button>
                     <button type="button" class="cancel-btn" id="cancelJobBtn">Cancel</button>
@@ -354,7 +375,7 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Modal Logic
             const addModal = document.getElementById('addEmployeeModal');
             const addBtn = document.getElementById('addEmployeeBtn');
@@ -365,19 +386,19 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
             function openModal() { addModal.style.display = 'block'; }
             function closeModal() { addModal.style.display = 'none'; }
 
-            if(addBtn) addBtn.addEventListener('click', openModal);
-            if(addBtn2) addBtn2.addEventListener('click', openModal);
-            if(closeAdd) closeAdd.addEventListener('click', closeModal);
-            window.addEventListener('click', (e) => { if(e.target == addModal) closeModal(); });
+            if (addBtn) addBtn.addEventListener('click', openModal);
+            if (addBtn2) addBtn2.addEventListener('click', openModal);
+            if (closeAdd) closeAdd.addEventListener('click', closeModal);
+            window.addEventListener('click', (e) => { if (e.target == addModal) closeModal(); });
 
-            if(addForm) {
-                addForm.addEventListener('submit', function(e) {
+            if (addForm) {
+                addForm.addEventListener('submit', function (e) {
                     e.preventDefault();
                     const formData = new FormData(addForm);
                     // Use helper from scripts.js if available, else plain fetch
                     if (typeof addEmployee === 'function') {
                         addEmployee(formData).then(res => {
-                            if(res.success) {
+                            if (res.success) {
                                 closeModal();
                                 addForm.reset();
                                 loadEmployees();
@@ -389,10 +410,10 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
                         // Fallback inline
                         fetch('employee_actions.php?action=add', {
                             method: 'POST',
-                            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                             body: new URLSearchParams(formData)
-                        }).then(r=>r.json()).then(res=>{
-                            if(res.success) {
+                        }).then(r => r.json()).then(res => {
+                            if (res.success) {
                                 closeModal();
                                 addForm.reset();
                                 loadEmployees();
@@ -407,12 +428,12 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
             // Set default dates logic...
             const today = new Date().toISOString().split('T')[0];
             const joinDate = document.getElementById('joinDate');
-            if(joinDate) joinDate.value = today;
+            if (joinDate) joinDate.value = today;
 
             const futureDate = new Date();
             futureDate.setDate(futureDate.getDate() + 30);
             const appDeadline = document.getElementById('applicationDeadline');
-            if(appDeadline) appDeadline.value = futureDate.toISOString().split('T')[0];
+            if (appDeadline) appDeadline.value = futureDate.toISOString().split('T')[0];
 
             // Load Data
             loadGlobalStats();
@@ -424,27 +445,27 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
             fetch('get_kebele_hr_stats.php')
                 .then(response => response.json())
                 .then(data => {
-                    if(data.success) {
-                         // Auto-seed if empty
-                         if (data.stats.total_employees == 0) {
+                    if (data.success) {
+                        // Auto-seed if empty
+                        if (data.stats.total_employees == 0) {
                             if (!sessionStorage.getItem('kebele_seeded')) {
                                 console.log('Kebele System Empty: Initializing default data...');
                                 fetch('seed_data.php')
                                     .then(r => r.json())
                                     .then(res => {
-                                        if(res.success) {
+                                        if (res.success) {
                                             sessionStorage.setItem('kebele_seeded', 'true');
-                                            location.reload(); 
+                                            location.reload();
                                         }
                                     });
                             }
                         }
 
-                        if(document.getElementById('totalEmployees')) document.getElementById('totalEmployees').textContent = data.stats.total_employees;
-                        if(document.getElementById('openPositions')) document.getElementById('openPositions').textContent = data.stats.open_positions;
-                        if(document.getElementById('onLeave')) document.getElementById('onLeave').textContent = data.stats.on_leave;
-                        if(document.getElementById('attendanceRate')) document.getElementById('attendanceRate').parentNode.querySelector('h3').textContent = data.stats.attendance_rate + '%';
-                        if(document.getElementById('pendingLeaveCount')) document.getElementById('pendingLeaveCount').textContent = data.stats.pending_leave + ' pending';
+                        if (document.getElementById('totalEmployees')) document.getElementById('totalEmployees').textContent = data.stats.total_employees;
+                        if (document.getElementById('openPositions')) document.getElementById('openPositions').textContent = data.stats.open_positions;
+                        if (document.getElementById('onLeave')) document.getElementById('onLeave').textContent = data.stats.on_leave;
+                        if (document.getElementById('attendanceRate')) document.getElementById('attendanceRate').textContent = data.stats.attendance_rate + '%';
+                        if (document.getElementById('pendingLeaveCount')) document.getElementById('pendingLeaveCount').textContent = data.stats.pending_leave + ' pending';
                     }
                 });
         }
@@ -468,12 +489,12 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
                             const joinDate = employee.join_date ? new Date(employee.join_date).toLocaleDateString() : '-';
                             const status = employee.status || 'active';
                             const statusClass = status.toLowerCase();
-                            
+
                             const row = document.createElement('tr');
                             // Store ID for delegation
-                            row.dataset.employeeId = empId; 
+                            row.dataset.employeeId = empId;
                             // If empId is N/A, we can't really edit/delete, but displaying is fine.
-                            
+
                             row.innerHTML = `
                                 <td>
                                     <div class="employee-info">
@@ -507,16 +528,73 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
         }
 
         function loadAllCharts() {
+            loadAttendanceTrendChart();
             loadGenderChart();
             loadAcademicChart();
+            loadAgeChart();
+            loadExperienceChart();
+            loadSalaryChart();
             loadDepartmentChart();
             loadJobLevelChart();
             loadStatusChart();
         }
 
+        function loadAttendanceTrendChart() {
+            fetch('get_kebele_hr_attendance_trend_stats.php').then(r => r.json()).then(d => {
+                if (!d.success || !d.data.dates.length) return;
+                const ctx = document.getElementById('attendanceTrendChart').getContext('2d');
+                const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                gradient.addColorStop(0, 'rgba(76, 181, 174, 0.3)');
+                gradient.addColorStop(1, 'rgba(76, 181, 174, 0)');
+
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: d.data.dates.map(date => new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })),
+                        datasets: [
+                            {
+                                label: 'Present',
+                                data: d.data.present,
+                                borderColor: '#4cb5ae',
+                                backgroundColor: gradient,
+                                fill: true,
+                                tension: 0.4,
+                                pointBackgroundColor: '#fff',
+                                pointBorderColor: '#4cb5ae',
+                                pointBorderWidth: 2,
+                                pointRadius: 4,
+                                pointHoverRadius: 6
+                            },
+                            {
+                                label: 'On Leave',
+                                data: d.data.leave,
+                                borderColor: '#ffc107',
+                                borderDash: [5, 5],
+                                tension: 0.4,
+                                fill: false,
+                                pointRadius: 0
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: { display: true, text: 'Workforce Presence Trend', font: { size: 14, weight: 'bold' } },
+                            legend: { position: 'bottom' }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { stepSize: 1, color: '#64748b' }, grid: { borderDash: [2, 2], color: '#e2e8f0' } },
+                            x: { ticks: { color: '#64748b' }, grid: { display: false } }
+                        }
+                    }
+                });
+            });
+        }
+
         function loadGenderChart() {
-            fetch('get_kebele_hr_gender_stats.php').then(r=>r.json()).then(d=>{
-                if(!d.success) return;
+            fetch('get_kebele_hr_gender_stats.php').then(r => r.json()).then(d => {
+                if (!d.success) return;
                 new Chart(document.getElementById('genderChart'), {
                     type: 'doughnut',
                     data: { labels: Object.keys(d.data), datasets: [{ data: Object.values(d.data), backgroundColor: ['#4cb5ae', '#ff7e5f', '#ffc107', '#17a2b8'], borderWidth: 0 }] },
@@ -525,9 +603,42 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
             });
         }
 
+        function loadAgeChart() {
+            fetch('get_kebele_hr_age_stats.php').then(r => r.json()).then(d => {
+                if (!d.success) return;
+                new Chart(document.getElementById('ageChart'), {
+                    type: 'bar',
+                    data: { labels: Object.keys(d.data), datasets: [{ label: 'Employees', data: Object.values(d.data), backgroundColor: '#ff7e5f', borderRadius: 5 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Age Distribution' }, legend: { display: false } } }
+                });
+            });
+        }
+
+        function loadExperienceChart() {
+            fetch('get_kebele_hr_experience_stats.php').then(r => r.json()).then(d => {
+                if (!d.success) return;
+                new Chart(document.getElementById('experienceChart'), {
+                    type: 'doughnut',
+                    data: { labels: Object.keys(d.data), datasets: [{ data: Object.values(d.data), backgroundColor: ['#1a4a5f', '#2a6e8c', '#4cb5ae', '#8e9aaf', '#cbd5e1'], borderWidth: 0 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Tenure / Experience' }, legend: { position: 'bottom' } } }
+                });
+            });
+        }
+
+        function loadSalaryChart() {
+            fetch('get_kebele_hr_salary_stats.php').then(r => r.json()).then(d => {
+                if (!d.success) return;
+                new Chart(document.getElementById('salaryChart'), {
+                    type: 'bar',
+                    data: { labels: Object.keys(d.data), datasets: [{ label: 'Employees', data: Object.values(d.data), backgroundColor: '#4cb5ae', borderRadius: 5 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Salary Distribution (ETB)' }, legend: { display: false } } }
+                });
+            });
+        }
+
         function loadAcademicChart() {
-            fetch('get_kebele_hr_academic_stats.php').then(r=>r.json()).then(d=>{
-                if(!d.success) return;
+            fetch('get_kebele_hr_academic_stats.php').then(r => r.json()).then(d => {
+                if (!d.success) return;
                 new Chart(document.getElementById('academicChart'), {
                     type: 'pie',
                     data: { labels: Object.keys(d.data), datasets: [{ data: Object.values(d.data), backgroundColor: ['#1a4a5f', '#2a6e8c', '#4cb5ae', '#ff7e5f', '#ffc107'], borderWidth: 0 }] },
@@ -537,8 +648,8 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
         }
 
         function loadDepartmentChart() {
-            fetch('get_kebele_hr_department_stats.php').then(r=>r.json()).then(d=>{
-                if(!d.success) return;
+            fetch('get_kebele_hr_department_stats.php').then(r => r.json()).then(d => {
+                if (!d.success) return;
                 new Chart(document.getElementById('departmentChart'), {
                     type: 'bar',
                     data: { labels: Object.keys(d.data), datasets: [{ label: 'Employees', data: Object.values(d.data), backgroundColor: '#4cb5ae', borderRadius: 5 }] },
@@ -548,8 +659,8 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
         }
 
         function loadJobLevelChart() {
-            fetch('get_kebele_hr_job_level_stats.php').then(r=>r.json()).then(d=>{
-                if(!d.success) return;
+            fetch('get_kebele_hr_job_level_stats.php').then(r => r.json()).then(d => {
+                if (!d.success) return;
                 new Chart(document.getElementById('jobLevelChart'), {
                     type: 'bar',
                     data: { labels: Object.keys(d.data), datasets: [{ label: 'Employees', data: Object.values(d.data), backgroundColor: '#2a6e8c', borderRadius: 5 }] },
@@ -559,8 +670,8 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
         }
 
         function loadStatusChart() {
-            fetch('get_kebele_hr_status_stats.php').then(r=>r.json()).then(d=>{
-                if(!d.success) return;
+            fetch('get_kebele_hr_status_stats.php').then(r => r.json()).then(d => {
+                if (!d.success) return;
                 new Chart(document.getElementById('statusChart'), {
                     type: 'pie',
                     data: { labels: Object.keys(d.data), datasets: [{ data: Object.values(d.data), backgroundColor: ['#28a745', '#ffc107', '#dc3545'], borderWidth: 0 }] },
@@ -569,26 +680,27 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
             });
         }
         function deleteEmployee(id) {
-            if(confirm('Are you sure you want to delete this employee?')) {
+            if (confirm('Are you sure you want to delete this employee?')) {
                 const formData = new FormData();
                 formData.append('employee_id', id);
                 fetch('employee_actions.php?action=delete', {
                     method: 'POST',
                     body: formData
                 })
-                .then(r => r.json())
-                .then(data => {
-                    if(data.success) {
-                        alert('Employee deleted.');
-                        loadEmployees();
-                        loadGlobalStats();
-                    } else {
-                        alert('Error: ' + data.message);
-                    }
-                });
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Employee deleted.');
+                            loadEmployees();
+                            loadGlobalStats();
+                        } else {
+                            alert('Error: ' + data.message);
+                        }
+                    });
             }
         }
     </script>
     <script src="scripts.js"></script>
 </body>
+
 </html>
