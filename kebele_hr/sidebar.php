@@ -48,6 +48,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <span class="menu-badge" id="sidebarLeaveBadge">0</span>
                 </a>
             </li>
+            <li class="menu-item <?php echo $current_page == 'leave_balances.php' ? 'active' : ''; ?>">
+                <a href="leave_balances.php">
+                    <i class="fas fa-wallet"></i>
+                    <span class="menu-text">Leave Balances</span>
+                </a>
+            </li>
             <li class="menu-item <?php echo $current_page == 'hr-recruitment.php' ? 'active' : ''; ?>">
                 <a href="hr-recruitment.php">
                     <i class="fas fa-user-plus"></i>

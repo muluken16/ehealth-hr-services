@@ -13,32 +13,7 @@ if (empty($employee_id)) {
     exit();
 }
 
-// Check if leave_entitlements table exists
-$table_check = $conn->query("SHOW TABLES LIKE 'leave_entitlements'");
-if ($table_check->num_rows === 0) {
-    // Create the table if it doesn't exist
-    $create_table = "CREATE TABLE IF NOT EXISTS leave_entitlements (
-        id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        employee_id VARCHAR(20) NOT NULL,
-        year INT NOT NULL,
-        annual_leave_days INT DEFAULT 21,
-        sick_leave_days INT DEFAULT 14,
-        maternity_leave_days INT DEFAULT 120,
-        paternity_leave_days INT DEFAULT 10,
-        emergency_leave_days INT DEFAULT 5,
-        used_annual_leave INT DEFAULT 0,
-        used_sick_leave INT DEFAULT 0,
-        used_maternity_leave INT DEFAULT 0,
-        used_paternity_leave INT DEFAULT 0,
-        used_emergency_leave INT DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY unique_employee_year (employee_id, year)
-    )";
-    $conn->query($create_table);
-}
-
-// Get employee details and calculate years of service
+// Get employee details
 $emp_stmt = $conn->prepare("SELECT employee_id, first_name, last_name, join_date, gender FROM employees WHERE employee_id = ?");
 $emp_stmt->bind_param("s", $employee_id);
 $emp_stmt->execute();
@@ -52,92 +27,87 @@ if ($emp_result->num_rows === 0) {
 $employee = $emp_result->fetch_assoc();
 $emp_stmt->close();
 
-// Calculate years of service
+// Calculate service years
 $join_date = new DateTime($employee['join_date']);
 $current_date = new DateTime();
-$years_of_service = $current_date->diff($join_date)->y;
-$months_of_service = $current_date->diff($join_date)->m + ($years_of_service * 12);
+$diff = $current_date->diff($join_date);
+$years_of_service = $diff->y;
+$months_of_service = ($years_of_service * 12) + $diff->m;
 
-// Function to calculate leave entitlement based on years of service
-function calculateLeaveEntitlement($years_of_service, $gender)
+// Base Entitlement Function
+function calculateLegalBase($years)
 {
-    $annual_leave = 21; // Base annual leave
-
-    // Add extra days based on years of service
-    if ($years_of_service >= 5) {
-        $annual_leave += 2; // 23 days after 5 years
-    }
-    if ($years_of_service >= 10) {
-        $annual_leave += 2; // 25 days after 10 years
-    }
-    if ($years_of_service >= 15) {
-        $annual_leave += 3; // 28 days after 15 years
-    }
-    if ($years_of_service >= 20) {
-        $annual_leave += 2; // 30 days after 20 years
-    }
-
-    return [
-        'annual_leave_days' => $annual_leave,
-        'sick_leave_days' => 14,
-        'maternity_leave_days' => ($gender === 'female') ? 120 : 0,
-        'paternity_leave_days' => ($gender === 'male') ? 10 : 0,
-        'emergency_leave_days' => 5
-    ];
+    if ($years < 1)
+        return 0;
+    return 16 + floor($years / 2);
 }
 
-// Get or create leave entitlement for current year
-$entitlements = calculateLeaveEntitlement($years_of_service, $employee['gender']);
-
+// Get or create leave entitlement
 $entitlement_stmt = $conn->prepare("SELECT * FROM leave_entitlements WHERE employee_id = ? AND year = ?");
 $entitlement_stmt->bind_param("si", $employee_id, $current_year);
 $entitlement_stmt->execute();
-$entitlement_result = $entitlement_stmt->get_result();
+$res = $entitlement_stmt->get_result();
 
-if ($entitlement_result->num_rows === 0) {
-    // Create new entitlement record
-    $insert_stmt = $conn->prepare("INSERT INTO leave_entitlements (employee_id, year, annual_leave_days, sick_leave_days, maternity_leave_days, paternity_leave_days, emergency_leave_days) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $insert_stmt->bind_param(
-        "siiiiii",
-        $employee_id,
-        $current_year,
-        $entitlements['annual_leave_days'],
-        $entitlements['sick_leave_days'],
-        $entitlements['maternity_leave_days'],
-        $entitlements['paternity_leave_days'],
-        $entitlements['emergency_leave_days']
-    );
-    $insert_stmt->execute();
-    $insert_stmt->close();
+if ($res->num_rows === 0) {
+    $prev_year = $current_year - 1;
+    $carry_forward = 0;
 
-    // Get the newly created record
+    // Check for carry forward (only if service >= 2 years)
+    if ($years_of_service >= 2) {
+        $p_stmt = $conn->prepare("SELECT (annual_leave_days + carry_forward_days - used_annual_leave) as unused FROM leave_entitlements WHERE employee_id = ? AND year = ?");
+        $p_stmt->bind_param("si", $employee_id, $prev_year);
+        $p_stmt->execute();
+        $p_res = $p_stmt->get_result();
+        if ($p_res->num_rows > 0) {
+            $carry_forward = max(0, $p_res->fetch_assoc()['unused']);
+        }
+        $p_stmt->close();
+    }
+
+    $base = 16;
+    $sick = 180;
+    $mat = ($employee['gender'] === 'female') ? 120 : 0;
+    $pat = ($employee['gender'] === 'male') ? 3 : 0;
+    $emg = 3;
+
+    $ins = $conn->prepare("INSERT INTO leave_entitlements (employee_id, year, annual_leave_days, carry_forward_days, sick_leave_days, maternity_leave_days, paternity_leave_days, emergency_leave_days) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $ins->bind_param("siiiiiii", $employee_id, $current_year, $base, $carry_forward, $sick, $mat, $pat, $emg);
+    $ins->execute();
+    $ins->close();
+
     $entitlement_stmt->execute();
-    $entitlement_result = $entitlement_stmt->get_result();
+    $res = $entitlement_stmt->get_result();
 }
 
-$leave_balance = $entitlement_result->fetch_assoc();
+$leave = $res->fetch_assoc();
 $entitlement_stmt->close();
 
-// Calculate remaining leave days
-$remaining_annual = $leave_balance['annual_leave_days'] - $leave_balance['used_annual_leave'];
-$remaining_sick = $leave_balance['sick_leave_days'] - $leave_balance['used_sick_leave'];
-$remaining_maternity = $leave_balance['maternity_leave_days'] - $leave_balance['used_maternity_leave'];
-$remaining_paternity = $leave_balance['paternity_leave_days'] - $leave_balance['used_paternity_leave'];
-$remaining_emergency = $leave_balance['emergency_leave_days'] - $leave_balance['used_emergency_leave'];
+// Dynamic Tenure adjustment for UI logic (if not manually overridden)
+$bonus = ($years_of_service >= 1) ? floor($years_of_service / 2) : 0;
+$annual_total = $leave['annual_leave_days'];
 
-// Get pending leave requests (check if table exists first)
-$pending_leaves = [];
-$table_check2 = $conn->query("SHOW TABLES LIKE 'leave_requests'");
-if ($table_check2->num_rows > 0) {
-    $pending_stmt = $conn->prepare("SELECT leave_type, SUM(days_requested) as pending_days FROM leave_requests WHERE employee_id = ? AND status = 'pending' GROUP BY leave_type");
-    $pending_stmt->bind_param("s", $employee_id);
-    $pending_stmt->execute();
-    $pending_result = $pending_stmt->get_result();
+// If record is at default 16, apply tenure bonus
+if ($annual_total == 16 && $years_of_service >= 1) {
+    $annual_total = 16 + $bonus;
+}
 
-    while ($row = $pending_result->fetch_assoc()) {
-        $pending_leaves[$row['leave_type']] = $row['pending_days'];
-    }
-    $pending_stmt->close();
+// Lock for probation
+if ($years_of_service < 1) {
+    $annual_total = 0;
+    $leave['carry_forward_days'] = 0;
+}
+
+$grand_total_annual = $annual_total + $leave['carry_forward_days'];
+
+// Get pending
+$pending = ['annual' => 0, 'sick' => 0, 'maternity' => 0, 'paternity' => 0, 'emergency' => 0];
+$p_stmt = $conn->prepare("SELECT leave_type, SUM(days_requested) as pd FROM leave_requests WHERE employee_id = ? AND status = 'pending' GROUP BY leave_type");
+$p_stmt->bind_param("s", $employee_id);
+$p_stmt->execute();
+$p_res = $p_stmt->get_result();
+while ($row = $p_res->fetch_assoc()) {
+    if (isset($pending[$row['leave_type']]))
+        $pending[$row['leave_type']] = $row['pd'];
 }
 
 $response = [
@@ -145,40 +115,42 @@ $response = [
         'id' => $employee['employee_id'],
         'name' => $employee['first_name'] . ' ' . $employee['last_name'],
         'join_date' => $employee['join_date'],
-        'years_of_service' => $years_of_service,
-        'months_of_service' => $months_of_service,
+        'service_years' => $years_of_service,
         'gender' => $employee['gender']
     ],
     'leave_balance' => [
         'annual' => [
-            'entitled' => $leave_balance['annual_leave_days'],
-            'used' => $leave_balance['used_annual_leave'],
-            'remaining' => $remaining_annual,
-            'pending' => $pending_leaves['annual'] ?? 0
+            'entitled' => $grand_total_annual,
+            'base' => $annual_total,
+            'carried' => $leave['carry_forward_days'],
+            'used' => $leave['used_annual_leave'],
+            'remaining' => $grand_total_annual - $leave['used_annual_leave'],
+            'pending' => $pending['annual'],
+            'is_eligible' => ($years_of_service >= 1)
         ],
         'sick' => [
-            'entitled' => $leave_balance['sick_leave_days'],
-            'used' => $leave_balance['used_sick_leave'],
-            'remaining' => $remaining_sick,
-            'pending' => $pending_leaves['sick'] ?? 0
+            'entitled' => $leave['sick_leave_days'],
+            'used' => $leave['used_sick_leave'],
+            'remaining' => $leave['sick_leave_days'] - $leave['used_sick_leave'],
+            'pending' => $pending['sick']
         ],
         'maternity' => [
-            'entitled' => $leave_balance['maternity_leave_days'],
-            'used' => $leave_balance['used_maternity_leave'],
-            'remaining' => $remaining_maternity,
-            'pending' => $pending_leaves['maternity'] ?? 0
+            'entitled' => $leave['maternity_leave_days'],
+            'used' => $leave['used_maternity_leave'],
+            'remaining' => $leave['maternity_leave_days'] - $leave['used_maternity_leave'],
+            'pending' => $pending['maternity']
         ],
         'paternity' => [
-            'entitled' => $leave_balance['paternity_leave_days'],
-            'used' => $leave_balance['used_paternity_leave'],
-            'remaining' => $remaining_paternity,
-            'pending' => $pending_leaves['paternity'] ?? 0
+            'entitled' => $leave['paternity_leave_days'],
+            'used' => $leave['used_paternity_leave'],
+            'remaining' => $leave['paternity_leave_days'] - $leave['used_paternity_leave'],
+            'pending' => $pending['paternity']
         ],
         'emergency' => [
-            'entitled' => $leave_balance['emergency_leave_days'],
-            'used' => $leave_balance['used_emergency_leave'],
-            'remaining' => $remaining_emergency,
-            'pending' => $pending_leaves['emergency'] ?? 0
+            'entitled' => $leave['emergency_leave_days'],
+            'used' => $leave['used_emergency_leave'],
+            'remaining' => $leave['emergency_leave_days'] - $leave['used_emergency_leave'],
+            'pending' => $pending['emergency']
         ]
     ]
 ];

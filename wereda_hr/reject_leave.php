@@ -1,12 +1,13 @@
 <?php
 session_start();
+header('Content-Type: application/json');
+
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'wereda_hr') {
-    header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit();
 }
 
-include '../db.php';
+require_once '../db.php';
 
 $data = json_decode(file_get_contents('php://input'), true);
 
@@ -15,21 +16,31 @@ if (!$data || !isset($data['leave_id'])) {
     exit();
 }
 
-$conn = getDBConnection();
+try {
+    $conn = getDBConnection();
+    $leave_id = $data['leave_id'];
+    $approved_by = $_SESSION['user_id'] ?? $_SESSION['user_name'];
+    $rejection_reason = $data['reason'] ?? 'Manual rejection by HR';
 
-$leave_id = $data['leave_id'];
-$approved_by = $_SESSION['user_id'];
+    // Update leave request status
+    $stmt = $conn->prepare("UPDATE leave_requests SET status = 'rejected', approved_by = ?, approved_at = NOW(), rejection_reason = ? WHERE id = ?");
+    $stmt->bind_param("ssi", $approved_by, $rejection_reason, $leave_id);
 
-$sql = "UPDATE leave_requests SET status = 'rejected', approved_by = ?, approved_at = NOW() WHERE id = ?";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("si", $approved_by, $leave_id);
+    if ($stmt->execute()) {
+        echo json_encode([
+            'success' => true,
+            'message' => '❌ Leave request rejected',
+            'reason' => $rejection_reason
+        ]);
+    } else {
+        throw new Exception('Error rejecting leave: ' . $stmt->error);
+    }
 
-if ($stmt->execute()) {
-    echo json_encode(['success' => true, 'message' => 'Leave request rejected']);
-} else {
-    echo json_encode(['success' => false, 'message' => 'Error rejecting leave: ' . $stmt->error]);
+} catch (Exception $e) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'System error: ' . $e->getMessage()
+    ]);
 }
 
-$stmt->close();
 $conn->close();
-?>

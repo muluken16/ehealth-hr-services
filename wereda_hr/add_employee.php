@@ -1,10 +1,143 @@
 <?php
-session_start();
-// Default user/role for demo if needed
-if (!isset($_SESSION['user_name'])) {
-    $_SESSION['user_name'] = 'Wereda HR Officer';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Ensure role is set for the demo (Dev Fallback)
+if (!isset($_SESSION['role'])) {
     $_SESSION['role'] = 'wereda_hr';
+    $_SESSION['user_name'] = 'Wereda HR Officer';
     $_SESSION['woreda'] = 'Woreda 1';
+    $_SESSION['user_id'] = 'DEMO_USER';
+}
+
+if ($_SESSION['role'] != 'wereda_hr') {
+    header('Location: ../index.html');
+    exit();
+}
+
+$page_title = 'Add New Employee';
+require_once '../db.php';
+
+$errors = [];
+$success = false;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $first_name = trim($_POST['first_name'] ?? '');
+    $middle_name = trim($_POST['middle_name'] ?? '');
+    $last_name = trim($_POST['last_name'] ?? '');
+    $gender = $_POST['gender'] ?? '';
+    $date_of_birth = $_POST['date_of_birth'] ?? '';
+    $marital_status = $_POST['marital_status'] ?? '';
+    $religion = $_POST['religion'] ?? '';
+    $citizenship = $_POST['citizenship'] ?? '';
+    $phone = $_POST['phone'] ?? '';
+    $email = $_POST['email'] ?? '';
+    $address = $_POST['address'] ?? '';
+
+    // Employment details
+    $position = $_POST['position'] ?? '';
+    $department_assigned = $_POST['department_assigned'] ?? '';
+    $join_date = $_POST['join_date'] ?? '';
+    $employment_type = $_POST['employment_type'] ?? '';
+    $salary = $_POST['salary'] ?? '';
+    $working_kebele = $_POST['working_kebele'] ?? '';
+
+    // Education
+    $education_level = $_POST['education_level'] ?? '';
+    $university = $_POST['university'] ?? '';
+    $field_of_study = $_POST['field_of_study'] ?? '';
+
+    // Banking
+    $bank_name = $_POST['bank_name'] ?? '';
+    $bank_account = $_POST['bank_account'] ?? '';
+
+    // Emergency contact
+    $emergency_name = $_POST['emergency_name'] ?? '';
+    $emergency_phone = $_POST['emergency_phone'] ?? '';
+    $emergency_relation = $_POST['emergency_relation'] ?? '';
+
+    // Validation
+    if (empty($first_name))
+        $errors[] = 'First name is required';
+    if (empty($last_name))
+        $errors[] = 'Last name is required';
+    if (empty($gender))
+        $errors[] = 'Gender is required';
+    if (empty($phone))
+        $errors[] = 'Phone is required';
+    if (empty($position))
+        $errors[] = 'Position is required';
+    if (empty($join_date))
+        $errors[] = 'Join date is required';
+
+    if (empty($errors)) {
+        try {
+            $conn = getDBConnection();
+
+            // Generate employee ID
+            $emp_prefix = 'EMP-' . date('ym');
+            $stmt = $conn->prepare("SELECT COUNT(*) as cnt FROM employees WHERE employee_id LIKE ?");
+            $stmt->bind_param("s", $emp_prefix . '%');
+            $stmt->execute();
+            $count = $stmt->get_result()->fetch_assoc()['cnt'] + 1;
+            $employee_id = $emp_prefix . strtoupper(dechex($count));
+
+            $sql = "INSERT INTO employees (
+                employee_id, first_name, middle_name, last_name, gender, date_of_birth,
+                marital_status, religion, citizenship, phone, email, address,
+                position, department_assigned, join_date, employment_type, salary, working_kebele,
+                education_level, university, field_of_study,
+                bank_name, bank_account,
+                emergency_name, emergency_phone, emergency_relation,
+                status, woreda, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, NOW())";
+
+            $woreda = $_SESSION['woreda'] ?? 'Woreda 1';
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param(
+                "ssssssssssssssssssssssssssss",
+                $employee_id,
+                $first_name,
+                $middle_name,
+                $last_name,
+                $gender,
+                $date_of_birth,
+                $marital_status,
+                $religion,
+                $citizenship,
+                $phone,
+                $email,
+                $address,
+                $position,
+                $department_assigned,
+                $join_date,
+                $employment_type,
+                $salary,
+                $working_kebele,
+                $education_level,
+                $university,
+                $field_of_study,
+                $bank_name,
+                $bank_account,
+                $emergency_name,
+                $emergency_phone,
+                $emergency_relation,
+                $woreda
+            );
+
+            if ($stmt->execute()) {
+                $success = true;
+                $_SESSION['success_message'] = "Employee added successfully! ID: $employee_id";
+                header('Location: wereda_hr_employee.php');
+                exit();
+            } else {
+                $errors[] = 'Failed to add employee: ' . $stmt->error;
+            }
+        } catch (Exception $e) {
+            $errors[] = 'Database error: ' . $e->getMessage();
+        }
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -13,936 +146,336 @@ if (!isset($_SESSION['user_name'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HealthFirst | Add New Employee</title>
+    <title>HealthFirst | Add Employee</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../style/style.css">
+    <script src="locations.js"></script>
     <style>
-        :root {
-            --primary: #1a4a5f;
-            --secondary: #2c7da0;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --gray: #64748b;
-            --light: #f8fafc;
-        }
-
-        body {
-            background: #f1f5f9;
-            font-family: 'Inter', sans-serif;
-            color: #1e293b;
-        }
-
-        .add-layout {
-            max-width: 1100px;
-            margin: 40px auto;
-            display: grid;
-            grid-template-columns: 280px 1fr;
-            gap: 30px;
-            padding: 0 20px;
-        }
-
-        .nav-card {
-            background: white;
-            border-radius: 24px;
-            padding: 30px 20px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-            height: fit-content;
-            position: sticky;
-            top: 40px;
-        }
-
-        .new-employee-badge {
-            width: 100px;
-            height: 100px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5rem;
-            margin: 0 auto 10px;
-            box-shadow: 0 10px 20px rgba(26, 74, 95, 0.2);
-            position: relative;
-            overflow: hidden;
-            cursor: pointer;
-        }
-
-        .new-employee-badge img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            position: absolute;
-            top: 0;
-            left: 0;
-            display: none;
-        }
-
-        .new-employee-badge label {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            cursor: pointer;
-        }
-
-        .nav-title {
-            text-align: center;
-            font-size: 1.2rem;
-            font-weight: 700;
-            margin-bottom: 5px;
-            color: var(--primary);
-        }
-
-        .nav-subtitle {
-            text-align: center;
-            color: var(--gray);
-            font-size: 0.9rem;
-            margin-bottom: 30px;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 15px;
-            border-radius: 12px;
-            color: var(--gray);
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: 500;
-            margin-bottom: 5px;
-        }
-
-        .nav-item:hover {
-            background: var(--light);
-            color: var(--primary);
-        }
-
-        .nav-item.active {
-            background: #eff6ff;
-            color: var(--primary);
-        }
-
-        .form-content {
-            background: white;
-            border-radius: 24px;
-            padding: 40px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-        }
-
-        .section-title {
-            font-size: 1.3rem;
-            font-weight: 700;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #f1f5f9;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: var(--primary);
-        }
-
         .form-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
-            margin-bottom: 40px;
         }
 
         .form-group {
-            margin-bottom: 0;
+            margin-bottom: 15px;
         }
 
         .form-group label {
             display: block;
-            font-size: 0.85rem;
+            margin-bottom: 5px;
             font-weight: 600;
-            color: #475569;
-            margin-bottom: 8px;
+            color: var(--primary);
+            font-size: 0.9rem;
         }
 
-        .form-group label span.required {
-            color: var(--danger);
-        }
-
-        .form-control-edit {
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
             width: 100%;
-            padding: 12px 16px;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
+            padding: 12px;
+            border: 1.5px solid #edf2f7;
+            border-radius: 8px;
             font-size: 0.95rem;
-            transition: all 0.3s;
+            transition: all 0.2s;
             background: #f8fafc;
         }
 
-        .form-control-edit:focus {
-            outline: none;
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            background: white;
             border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(26, 74, 95, 0.05);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(26, 74, 95, 0.1);
+        }
+
+        .form-section {
             background: white;
+            padding: 25px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+            border: 1px solid #f1f5f9;
         }
 
-        textarea.form-control-edit {
-            resize: vertical;
-            min-height: 80px;
+        .form-section h3 {
+            margin-bottom: 20px;
+            color: var(--primary);
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 10px;
         }
 
-        .conditional-field {
-            display: none;
-            margin-top: 15px;
-            padding: 15px;
-            background: #f8fafc;
-            border-radius: 12px;
-            border: 1px dashed #cbd5e1;
-        }
-
-        .conditional-field.show {
-            display: block;
-        }
-
-        .action-bar {
-            position: sticky;
-            bottom: 20px;
-            background: white;
-            padding: 20px 30px;
-            border-radius: 20px;
-            box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.05), 0 10px 25px rgba(0, 0, 0, 0.05);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 30px;
-            z-index: 100;
-        }
-
-        .btn-confirm {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        .btn-submit {
+            background: linear-gradient(135deg, var(--primary), #2a6e8c);
             color: white;
+            padding: 14px 28px;
             border: none;
-            padding: 14px 35px;
-            border-radius: 12px;
+            border-radius: 10px;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            font-size: 1rem;
         }
 
-        .btn-confirm:hover {
+        .btn-submit:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(26, 74, 95, 0.3);
+            box-shadow: 0 6px 20px rgba(26, 74, 95, 0.3);
         }
 
         .btn-cancel {
-            background: #f1f5f9;
-            color: var(--gray);
-            border: none;
-            padding: 14px 25px;
-            border-radius: 12px;
+            background: white;
+            color: #64748b;
+            border: 1.5px solid #e2e8f0;
+            padding: 14px 28px;
+            border-radius: 10px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
         }
 
         .btn-cancel:hover {
-            background: #e2e8f0;
-        }
-
-        .upload-area {
-            border: 2px dashed #cbd5e1;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
             background: #f8fafc;
-            transition: all 0.2s;
         }
 
-        .upload-area:hover {
-            border-color: var(--primary);
-            background: #eef2ff;
+        .error-msg {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #fecaca;
         }
 
-        @media (max-width: 900px) {
-            .add-layout {
-                grid-template-columns: 1fr;
-            }
-
-            .nav-card {
-                position: relative;
-                top: 0;
-                margin-bottom: 20px;
-            }
+        .success-msg {
+            background: #ecfdf5;
+            color: #059669;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #a7f3d0;
         }
 
-        .main-content {
-            overflow-y: auto;
-            height: 100vh;
+        .required::after {
+            content: ' *';
+            color: #dc2626;
         }
     </style>
 </head>
 
 <body>
     <div class="hr-container">
-        <!-- Location Data -->
-        <script src="locations.js"></script>
-
-        <!-- Sidebar -->
         <?php include 'sidebar.php'; ?>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <?php
-            $page_title = "Add New Employee";
-            include 'navbar.php';
-            ?>
-
-            <div class="content">
-                <div class="add-layout">
-
-                    <!-- Navbar / Progress -->
-                    <div class="nav-card">
-                        <div class="new-employee-badge">
-                            <i class="fas fa-camera" id="cameraIcon"></i>
-                            <img id="previewImg">
-                            <label for="photoInput"></label>
-                        </div>
-                        <div style="text-align: center; margin-bottom: 20px;">
-                            <small style="color: var(--gray); font-size: 0.8rem;">Click circle to upload photo</small>
-                        </div>
-                        <div class="nav-title">New Employee</div>
-                        <div class="nav-subtitle">Create a new record</div>
-
-                        <div class="nav-sections">
-                            <div class="nav-item active" onclick="scrollToSection('personal')"><i
-                                    class="fas fa-user"></i> Personal</div>
-                            <div class="nav-item" onclick="scrollToSection('education')"><i
-                                    class="fas fa-graduation-cap"></i> Education</div>
-                            <div class="nav-item" onclick="scrollToSection('employment')"><i
-                                    class="fas fa-briefcase"></i> Employment</div>
-                            <div class="nav-item" onclick="scrollToSection('location')"><i
-                                    class="fas fa-map-marker-alt"></i> Contact</div>
-                            <div class="nav-item" onclick="scrollToSection('financial')"><i
-                                    class="fas fa-university"></i> Finance</div>
-                            <div class="nav-item" onclick="scrollToSection('warranty')"><i
-                                    class="fas fa-shield-alt"></i> Warranty</div>
-                            <div class="nav-item" onclick="scrollToSection('documents')"><i
-                                    class="fas fa-folder-open"></i> Documents</div>
-                        </div>
-                    </div>
-
-                    <!-- Form Area -->
-                    <div class="form-content">
-                        <form id="addEmployeeForm" enctype="multipart/form-data">
-                            <input type="file" name="photo" id="photoInput" accept="image/*" style="display: none;"
-                                onchange="previewProfile(this)">
-
-                            <!-- Personal -->
-                            <div id="personal">
-                                <div class="section-title"><i class="fas fa-user-circle"></i> Personal Information</div>
-                                <div class="form-grid">
-                                    <div class="form-group">
-                                        <label>First Name <span class="required">*</span></label>
-                                        <input type="text" name="first_name" class="form-control-edit"
-                                            placeholder="e.g. Abebe" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Middle Name</label>
-                                        <input type="text" name="middle_name" class="form-control-edit"
-                                            placeholder="e.g. Kebede">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Last Name <span class="required">*</span></label>
-                                        <input type="text" name="last_name" class="form-control-edit"
-                                            placeholder="e.g. Tesfaye" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Gender <span class="required">*</span></label>
-                                        <select name="gender" class="form-control-edit" required>
-                                            <option value="">Select Gender</option>
-                                            <option value="male">Male</option>
-                                            <option value="female">Female</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Date of Birth <span class="required">*</span></label>
-                                        <input type="date" name="date_of_birth" class="form-control-edit" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Marital Status</label>
-                                        <select name="marital_status" class="form-control-edit">
-                                            <option value="single">Single</option>
-                                            <option value="married">Married</option>
-                                            <option value="divorced">Divorced</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Religion</label>
-                                        <select name="religion" class="form-control-edit"
-                                            onchange="checkOtherReligion(this)">
-                                            <option value="">Select Religion</option>
-                                            <option value="Orthodox">Orthodox</option>
-                                            <option value="Islam">Islam</option>
-                                            <option value="Protestant">Protestant</option>
-                                            <option value="Catholic">Catholic</option>
-                                            <option value="other">Other</option>
-                                        </select>
-                                        <input type="text" id="otherReligion" name="other_religion"
-                                            class="form-control-edit conditional-field" placeholder="Enter religion">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Citizenship</label>
-                                        <select name="citizenship" class="form-control-edit"
-                                            onchange="checkOtherCitizenship(this)">
-                                            <option value="Ethiopia" selected>Ethiopia</option>
-                                            <option value="United States">United States</option>
-                                            <option value="Other">Other</option>
-                                        </select>
-                                        <input type="text" id="otherCitizenship" name="other_citizenship"
-                                            class="form-control-edit conditional-field" placeholder="Enter country">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Primary Language</label>
-                                        <select name="language" class="form-control-edit"
-                                            onchange="checkOtherLanguage(this)">
-                                            <option value="amharic">Amharic</option>
-                                            <option value="oromo">Afaan Oromo</option>
-                                            <option value="tigrigna">Tigrigna</option>
-                                            <option value="english">English</option>
-                                            <option value="other">Other</option>
-                                        </select>
-                                        <input type="text" id="otherLanguage" name="other_language"
-                                            class="form-control-edit conditional-field" placeholder="Enter language">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Education -->
-                            <div id="education">
-                                <div class="section-title"><i class="fas fa-graduation-cap"></i> Academic Background
-                                </div>
-                                <div class="form-grid">
-                                    <div class="form-group">
-                                        <label>Highest Level</label>
-                                        <select name="education_level" class="form-control-edit">
-                                            <option value="">Select Level</option>
-                                            <option value="diploma">Diploma</option>
-                                            <option value="bachelor">Bachelor's Degree</option>
-                                            <option value="master">Master's Degree</option>
-                                            <option value="phd">PhD</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Institution</label>
-                                        <input type="text" name="university" class="form-control-edit"
-                                            placeholder="University/College">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Field of Study</label>
-                                        <input type="text" name="department" class="form-control-edit"
-                                            placeholder="e.g. Computer Science">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Secondary School</label>
-                                        <input type="text" name="secondary_school" class="form-control-edit"
-                                            placeholder="High School Name">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Upload Certificate(s)</label>
-                                        <div class="upload-area" onclick="document.getElementById('edu_files').click()">
-                                            <i class="fas fa-cloud-upload-alt"></i> Select Document(s)
-                                            <input type="file" id="edu_files" name="education_files[]" multiple
-                                                style="display:none" onchange="handleFileList(this, 'edu_list')">
-                                        </div>
-                                        <div id="edu_list"
-                                            style="margin-top: 10px; font-size: 0.8rem; color: var(--secondary);"></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Employment -->
-                            <div id="employment">
-                                <div class="section-title"><i class="fas fa-briefcase"></i> Employment Details</div>
-                                <div class="form-grid">
-                                    <div class="form-group">
-                                        <label>Department Assigned <span class="required">*</span></label>
-                                        <select name="department_assigned" class="form-control-edit" required
-                                            onchange="toggleOtherField(this, 'other_dept_group')">
-                                            <option value="">Select Department</option>
-                                            <option value="Outpatient Department (OPD)">Outpatient Department (OPD)
-                                            </option>
-                                            <option value="Emergency / Casualty">Emergency / Casualty</option>
-                                            <option value="Maternal and Child Health (MCH)">Maternal and Child Health
-                                                (MCH)</option>
-                                            <option value="Antenatal Care (ANC)">Antenatal Care (ANC)</option>
-                                            <option value="Delivery / Labor Ward">Delivery / Labor Ward</option>
-                                            <option value="Postnatal Care (PNC)">Postnatal Care (PNC)</option>
-                                            <option value="Family Planning">Family Planning</option>
-                                            <option value="Expanded Program on Immunization (EPI)">Expanded Program on
-                                                Immunization (EPI)</option>
-                                            <option value="Tuberculosis (TB) Clinic">Tuberculosis (TB) Clinic</option>
-                                            <option value="HIV/AIDS Care and Treatment (ART Clinic)">HIV/AIDS Care and
-                                                Treatment (ART Clinic)</option>
-                                            <option value="Pharmacy">Pharmacy</option>
-                                            <option value="Laboratory">Laboratory</option>
-                                            <option value="Nutrition Unit">Nutrition Unit</option>
-                                            <option value="Medical Records / Health Information Management">Medical
-                                                Records / Health Information Management</option>
-                                            <option value="Administration and Finance">Administration and Finance
-                                            </option>
-                                            <option value="other">Other (please specify)</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group" id="other_dept_group" style="display:none;">
-                                        <label>Specify Department <span class="required">*</span></label>
-                                        <input type="text" name="other_department_assigned" class="form-control-edit"
-                                            placeholder="Enter department name">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Position / Title <span class="required">*</span></label>
-                                        <input type="text" name="position" class="form-control-edit" required
-                                            placeholder="e.g. Senior Nurse">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Join Date</label>
-                                        <input type="date" name="join_date" class="form-control-edit"
-                                            value="<?php echo date('Y-m-d'); ?>">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Employment Type</label>
-                                        <select name="employment_type" class="form-control-edit">
-                                            <option value="full-time">Full Time</option>
-                                            <option value="contract">Contract</option>
-                                            <option value="part-time">Part Time</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Status</label>
-                                        <select name="status" class="form-control-edit">
-                                            <option value="active">Active</option>
-                                            <option value="inactive">Inactive</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Salary (ETB)</label>
-                                        <input type="number" name="salary" class="form-control-edit" placeholder="0.00">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>National ID Number</label>
-                                        <input type="text" name="fin_id" class="form-control-edit"
-                                            placeholder="e.g. ID-12345">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Upload National ID Scan(s)</label>
-                                        <div class="upload-area"
-                                            onclick="document.getElementById('fin_scan_input').click()">
-                                            <i class="fas fa-id-card"></i> Select ID(s)
-                                            <input type="file" id="fin_scan_input" name="fin_scan[]" multiple
-                                                style="display:none" onchange="handleFileList(this, 'fin_list')">
-                                        </div>
-                                        <div id="fin_list"
-                                            style="margin-top: 10px; font-size: 0.8rem; color: var(--secondary);"></div>
-                                    </div>
-                                    <!-- Working Kebele -->
-                                    <div class="form-group">
-                                        <label>Working Kebele</label>
-                                        <input type="text" name="working_kebele" class="form-control-edit"
-                                            placeholder="e.g. Kebele 01">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Contact -->
-                            <div id="location">
-                                <div class="section-title"><i class="fas fa-map-marked-alt"></i> Contact & Address</div>
-                                <div class="form-grid">
-                                    <div class="form-group">
-                                        <label>Phone Number <span class="required">*</span></label>
-                                        <input type="tel" name="phone_number" class="form-control-edit" required
-                                            placeholder="+251...">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Emergency Contact</label>
-                                        <input type="text" name="emergency_contact" class="form-control-edit"
-                                            placeholder="Name & Phone">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Email Address <span class="required">*</span></label>
-                                        <input type="email" name="email" class="form-control-edit" required
-                                            placeholder="email@example.com">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Region</label>
-                                        <select id="region" name="region" class="form-control-edit"
-                                            onchange="loadZones()">
-                                            <option value="">Select Region</option>
-                                            <option value="addis_ababa">Addis Ababa</option>
-                                            <option value="afar">Afar</option>
-                                            <option value="amhara">Amhara</option>
-                                            <option value="benishangul_gumuz">Benishangul-Gumuz</option>
-                                            <option value="dire_dawa">Dire Dawa</option>
-                                            <option value="gambela">Gambela</option>
-                                            <option value="harari">Harari</option>
-                                            <option value="oromia">Oromia</option>
-                                            <option value="sidama">Sidama</option>
-                                            <option value="somali">Somali</option>
-                                            <option value="south_ethiopia">South Ethiopia</option>
-                                            <option value="south_west_ethiopia">South West Ethiopia</option>
-                                            <option value="central_ethiopia">Central Ethiopia</option>
-                                            <option value="tigray">Tigray</option>
-                                            <option value="other">Other</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Zone</label>
-                                        <select id="zone" name="zone" class="form-control-edit"
-                                            onchange="loadWoredas()">
-                                            <option value="">Select Zone</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Woreda</label>
-                                        <select id="woreda" name="woreda" class="form-control-edit"
-                                            onchange="loadKebeles()">
-                                            <option value="">Select Woreda</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Kebele</label>
-                                        <select id="kebele" name="kebele" class="form-control-edit">
-                                            <option value="">Select Kebele</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group" style="grid-column: 1/-1;">
-                                        <label>Detailed Address (House No.)</label>
-                                        <textarea name="address" class="form-control-edit"
-                                            placeholder="House No 123..."></textarea>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Finance -->
-                            <div id="financial">
-                                <div class="section-title"><i class="fas fa-university"></i> Banking & Finance</div>
-                                <div class="form-grid">
-                                    <div class="form-group">
-                                        <label>Bank Name</label>
-                                        <select name="bank_name" class="form-control-edit">
-                                            <option value="">Select Bank</option>
-                                            <option value="Commercial Bank of Ethiopia">Commercial Bank of Ethiopia
-                                            </option>
-                                            <option value="Dashen Bank">Dashen Bank</option>
-                                            <option value="Abyssinia Bank">Abyssinia Bank</option>
-                                            <option value="other">Other</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Account Number</label>
-                                        <input type="text" name="bank_account" class="form-control-edit"
-                                            placeholder="Account Number">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Credit Status</label>
-                                        <select name="credit_status" class="form-control-edit"
-                                            onchange="toggleCreditFile(this)">
-                                            <option value="good">Good / No Debt</option>
-                                            <option value="active">Active Credit</option>
-                                            <option value="bad">Bad / Default</option>
-                                        </select>
-                                    </div>
-                                    <div id="creditFileGroup" class="form-group"
-                                        style="display: none; grid-column: 1/-1;">
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                                            <div>
-                                                <label>Credit Status File(s) (Attached)</label>
-                                                <div class="upload-area"
-                                                    onclick="document.getElementById('loan_file_input').click()"
-                                                    style="padding: 10px;">
-                                                    <i class="fas fa-file-invoice-dollar"></i> Upload Credit Document(s)
-                                                    <input type="file" id="loan_file_input" name="loan_file[]" multiple
-                                                        accept=".pdf,image/*" style="display:none"
-                                                        onchange="handleFileList(this, 'loan_list')">
-                                                </div>
-                                                <div id="loan_list"
-                                                    style="margin-top: 10px; font-size: 0.8rem; color: var(--secondary);">
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label>Credit Information / Details</label>
-                                                <textarea name="credit_details" class="form-control-edit"
-                                                    placeholder="Enter details about the active credit or loan..."
-                                                    style="height: 70px;"></textarea>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Warranty -->
-                            <div id="warranty">
-                                <div class="section-title"><i class="fas fa-shield-halved"></i> Warranty & Legal</div>
-                                <div class="form-grid">
-                                    <div class="form-group" style="grid-column: 1 / -1;">
-                                        <label>Warranty / Guarantor Required?</label>
-                                        <select name="warranty_status" class="form-control-edit"
-                                            onchange="toggleWarrantyFields(this)">
-                                            <option value="yes">Yes - Guarantor Required</option>
-                                            <option value="no">No - Not Required</option>
-                                        </select>
-                                    </div>
-
-                                    <div id="warrantyFields" class="form-grid"
-                                        style="grid-column: 1 / -1; display: grid; margin-bottom: 0;">
-                                        <div class="form-group">
-                                            <label>Guarantor Name</label>
-                                            <input type="text" name="person_name" class="form-control-edit"
-                                                placeholder="Full Name">
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Guarantor Phone</label>
-                                            <input type="tel" name="phone" class="form-control-edit"
-                                                placeholder="+251...">
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Guarantor Woreda</label>
-                                            <input type="text" name="warranty_woreda" class="form-control-edit"
-                                                placeholder="Woreda">
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Guarantor Kebele</label>
-                                            <input type="text" name="warranty_kebele" class="form-control-edit"
-                                                placeholder="Kebele">
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Warranty Agreement Document(s)</label>
-                                            <div class="upload-area"
-                                                onclick="document.getElementById('warranty_file').click()">
-                                                <i class="fas fa-paperclip"></i> Upload Agreement(s)
-                                                <input type="file" id="warranty_file" name="scan_file[]" multiple
-                                                    style="display:none"
-                                                    onchange="handleFileList(this, 'warranty_list')">
-                                            </div>
-                                            <div id="warranty_list"
-                                                style="margin-top: 10px; font-size: 0.8rem; color: var(--secondary);">
-                                            </div>
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Additional ID Details</label>
-                                            <input type="text" name="national_id_details" class="form-control-edit"
-                                                placeholder="Guarantor ID info, etc.">
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group" style="grid-column: 1 / -1; margin-top: 20px;">
-                                        <div
-                                            style="font-weight: 600; color: var(--primary); margin-bottom: 15px; border-top: 1px solid #f1f5f9; padding-top: 15px;">
-                                            Legal & Criminal Status</div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Criminal Record Status</label>
-                                        <select name="criminal_status" class="form-control-edit"
-                                            onchange="toggleCriminalFile(this)">
-                                            <option value="no">Clean</option>
-                                            <option value="yes">Has Record</option>
-                                        </select>
-                                    </div>
-                                    <div id="criminalFileGroup" class="form-group"
-                                        style="display: none; grid-column: 1/-1;">
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                                            <div>
-                                                <label>Criminal Record File(s) (Photo/Scan)</label>
-                                                <div class="upload-area"
-                                                    onclick="document.getElementById('criminal_file_input').click()"
-                                                    style="padding: 10px;">
-                                                    <i class="fas fa-balance-scale"></i> Upload Criminal Document(s)
-                                                    <input type="file" id="criminal_file_input" name="criminal_file[]"
-                                                        multiple accept=".pdf,image/*" style="display:none"
-                                                        onchange="handleFileList(this, 'criminal_list')">
-                                                </div>
-                                                <div id="criminal_list"
-                                                    style="margin-top: 10px; font-size: 0.8rem; color: var(--secondary);">
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label>Criminal Record Details</label>
-                                                <textarea name="criminal_record_details" class="form-control-edit"
-                                                    placeholder="Enter specific details about the record..."
-                                                    style="height: 70px;"></textarea>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Documents -->
-                            <div id="documents">
-                                <div class="section-title"><i class="fas fa-folder-open"></i> Additional Documents</div>
-                                <div class="form-group">
-                                    <label>Upload IDs, Certificates, etc.</label>
-                                    <div class="upload-area" onclick="document.getElementById('multi_docs').click()">
-                                        <i class="fas fa-copy"></i> Select Multiple Files
-                                        <input type="file" id="multi_docs" name="documents[]" multiple
-                                            style="display:none" onchange="handleFileList(this, 'doc_list')">
-                                    </div>
-                                    <div id="doc_list"
-                                        style="margin-top: 10px; font-size: 0.8rem; color: var(--secondary);"></div>
-                                    <small style="margin-top:5px; display:block; color:var(--gray)">Supported: PDF, JPG,
-                                        PNG</small>
-                                </div>
-                            </div>
-
-                            <!-- Actions -->
-                            <div class="action-bar">
-                                <button type="button" onclick="window.location.href='wereda_hr_employees.php'"
-                                    class="btn-cancel">Cancel</button>
-                                <div style="display:flex; gap: 15px;">
-                                    <button type="submit" class="btn-confirm">
-                                        <i class="fas fa-check-circle"></i> Register Employee
-                                    </button>
-                                </div>
-                            </div>
-
-                        </form>
-                    </div>
-
-                </div>
+        <?php include 'navbar.php'; ?>
+        <div class="hr-dashboard">
+            <div class="page-header">
+                <h1><i class="fas fa-user-plus"></i> Add New Employee</h1>
+                <a href="wereda_hr_employee.php" class="btn-cancel"><i class="fas fa-arrow-left"></i> Back to
+                    Employees</a>
             </div>
-        </main>
+
+            <?php if (!empty($errors)): ?>
+                <div class="error-msg">
+                    <strong><i class="fas fa-exclamation-circle"></i> Please fix these errors:</strong>
+                    <ul style="margin: 10px 0 0 20px;">
+                        <?php foreach ($errors as $error): ?>
+                            <li><?php echo htmlspecialchars($error); ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            <?php endif; ?>
+
+            <form method="POST" id="employeeForm">
+                <!-- Personal Information -->
+                <div class="form-section">
+                    <h3><i class="fas fa-user"></i> Personal Information</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="required">First Name</label>
+                            <input type="text" name="first_name"
+                                value="<?php echo htmlspecialchars($_POST['first_name'] ?? ''); ?>" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Middle Name</label>
+                            <input type="text" name="middle_name"
+                                value="<?php echo htmlspecialchars($_POST['middle_name'] ?? ''); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Last Name</label>
+                            <input type="text" name="last_name"
+                                value="<?php echo htmlspecialchars($_POST['last_name'] ?? ''); ?>" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Gender</label>
+                            <select name="gender" required>
+                                <option value="">Select Gender</option>
+                                <option value="male" <?php echo ($_POST['gender'] ?? '') === 'male' ? 'selected' : ''; ?>>
+                                    Male</option>
+                                <option value="female" <?php echo ($_POST['gender'] ?? '') === 'female' ? 'selected' : ''; ?>>Female</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Date of Birth</label>
+                            <input type="date" name="date_of_birth"
+                                value="<?php echo htmlspecialchars($_POST['date_of_birth'] ?? ''); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>Marital Status</label>
+                            <select name="marital_status">
+                                <option value="">Select Status</option>
+                                <option value="single" <?php echo ($_POST['marital_status'] ?? '') === 'single' ? 'selected' : ''; ?>>Single</option>
+                                <option value="married" <?php echo ($_POST['marital_status'] ?? '') === 'married' ? 'selected' : ''; ?>>Married</option>
+                                <option value="divorced" <?php echo ($_POST['marital_status'] ?? '') === 'divorced' ? 'selected' : ''; ?>>Divorced</option>
+                                <option value="widowed" <?php echo ($_POST['marital_status'] ?? '') === 'widowed' ? 'selected' : ''; ?>>Widowed</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Religion</label>
+                            <input type="text" name="religion"
+                                value="<?php echo htmlspecialchars($_POST['religion'] ?? ''); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>Citizenship</label>
+                            <input type="text" name="citizenship"
+                                value="<?php echo htmlspecialchars($_POST['citizenship'] ?? 'Ethiopian'); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Phone</label>
+                            <input type="tel" name="phone"
+                                value="<?php echo htmlspecialchars($_POST['phone'] ?? ''); ?>" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" name="email"
+                                value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>">
+                        </div>
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label>Address</label>
+                            <textarea name="address"
+                                rows="2"><?php echo htmlspecialchars($_POST['address'] ?? ''); ?></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Employment Details -->
+                <div class="form-section">
+                    <h3><i class="fas fa-briefcase"></i> Employment Details</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="required">Position</label>
+                            <input type="text" name="position"
+                                value="<?php echo htmlspecialchars($_POST['position'] ?? ''); ?>" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Department</label>
+                            <select name="department_assigned">
+                                <option value="">Select Department</option>
+                                <option value="medical" <?php echo ($_POST['department_assigned'] ?? '') === 'medical' ? 'selected' : ''; ?>>Medical</option>
+                                <option value="admin" <?php echo ($_POST['department_assigned'] ?? '') === 'admin' ? 'selected' : ''; ?>>Admin</option>
+                                <option value="finance" <?php echo ($_POST['department_assigned'] ?? '') === 'finance' ? 'selected' : ''; ?>>Finance</option>
+                                <option value="support" <?php echo ($_POST['department_assigned'] ?? '') === 'support' ? 'selected' : ''; ?>>Support</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Join Date</label>
+                            <input type="date" name="join_date"
+                                value="<?php echo htmlspecialchars($_POST['join_date'] ?? date('Y-m-d')); ?>" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Employment Type</label>
+                            <select name="employment_type">
+                                <option value="full-time">Full-time</option>
+                                <option value="part-time" <?php echo ($_POST['employment_type'] ?? '') === 'part-time' ? 'selected' : ''; ?>>Part-time</option>
+                                <option value="contract" <?php echo ($_POST['employment_type'] ?? '') === 'contract' ? 'selected' : ''; ?>>Contract</option>
+                                <option value="temporary" <?php echo ($_POST['employment_type'] ?? '') === 'temporary' ? 'selected' : ''; ?>>Temporary</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Salary (ETB)</label>
+                            <input type="number" name="salary"
+                                value="<?php echo htmlspecialchars($_POST['salary'] ?? ''); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>Working Kebele</label>
+                            <input type="text" name="working_kebele"
+                                value="<?php echo htmlspecialchars($_POST['working_kebele'] ?? ''); ?>">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Education -->
+                <div class="form-section">
+                    <h3><i class="fas fa-graduation-cap"></i> Education</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Education Level</label>
+                            <select name="education_level">
+                                <option value="">Select Level</option>
+                                <option value="high-school">High School</option>
+                                <option value="certificate">Certificate</option>
+                                <option value="diploma">Diploma</option>
+                                <option value="bachelor" <?php echo ($_POST['education_level'] ?? '') === 'bachelor' ? 'selected' : ''; ?>>Bachelor's Degree</option>
+                                <option value="master" <?php echo ($_POST['education_level'] ?? '') === 'master' ? 'selected' : ''; ?>>Master's Degree</option>
+                                <option value="phd" <?php echo ($_POST['education_level'] ?? '') === 'phd' ? 'selected' : ''; ?>>PhD</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>University/College</label>
+                            <input type="text" name="university"
+                                value="<?php echo htmlspecialchars($_POST['university'] ?? ''); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>Field of Study</label>
+                            <input type="text" name="field_of_study"
+                                value="<?php echo htmlspecialchars($_POST['field_of_study'] ?? ''); ?>">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Banking Information -->
+                <div class="form-section">
+                    <h3><i class="fas fa-university"></i> Banking Information</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Bank Name</label>
+                            <input type="text" name="bank_name"
+                                value="<?php echo htmlspecialchars($_POST['bank_name'] ?? ''); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>Account Number</label>
+                            <input type="text" name="bank_account"
+                                value="<?php echo htmlspecialchars($_POST['bank_account'] ?? ''); ?>">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Emergency Contact -->
+                <div class="form-section">
+                    <h3><i class="fas fa-phone-alt"></i> Emergency Contact</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Contact Name</label>
+                            <input type="text" name="emergency_name"
+                                value="<?php echo htmlspecialchars($_POST['emergency_name'] ?? ''); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>Contact Phone</label>
+                            <input type="tel" name="emergency_phone"
+                                value="<?php echo htmlspecialchars($_POST['emergency_phone'] ?? ''); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>Relationship</label>
+                            <input type="text" name="emergency_relation"
+                                value="<?php echo htmlspecialchars($_POST['emergency_relation'] ?? ''); ?>">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 15px; justify-content: flex-end;">
+                    <a href="wereda_hr_employee.php" class="btn-cancel">Cancel</a>
+                    <button type="submit" class="btn-submit"><i class="fas fa-save"></i> Save Employee</button>
+                </div>
+            </form>
+        </div>
     </div>
-
-    <script>
-        function scrollToSection(id) {
-            document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-                if (item.getAttribute('onclick').includes(id)) item.classList.add('active');
-            });
-        }
-
-        function previewProfile(input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    const img = document.getElementById('previewImg');
-                    img.src = e.target.result;
-                    img.style.display = 'block';
-                    document.querySelector('.new-employee-badge i').style.display = 'none';
-                }
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-
-        function checkOtherCitizenship(select) {
-            const field = document.getElementById('otherCitizenship');
-            if (select.value === 'Other') {
-                field.classList.add('show');
-            } else {
-                field.classList.remove('show');
-            }
-        }
-
-        function checkOtherLanguage(select) {
-            const field = document.getElementById('otherLanguage');
-            if (select.value === 'other') {
-                field.classList.add('show');
-            } else {
-                field.classList.remove('show');
-            }
-        }
-
-        function checkOtherReligion(select) {
-            const field = document.getElementById('otherReligion');
-            if (select.value === 'other') {
-                field.classList.add('show');
-            } else {
-                field.classList.remove('show');
-            }
-        }
-
-        function handleFileList(input, listId) {
-            const list = document.getElementById(listId);
-            list.innerHTML = '';
-            if (input.files) {
-                Array.from(input.files).forEach(file => {
-                    const div = document.createElement('div');
-                    div.innerHTML = `<i class="fas fa-file-alt"></i> ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
-                    div.style.marginBottom = '5px';
-                    list.appendChild(div);
-                });
-            }
-        }
-
-        // Form Submission
-        document.getElementById('addEmployeeForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-
-            const btn = document.querySelector('.btn-confirm');
-            const originalContent = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Registering...';
-            btn.disabled = true;
-
-            const formData = new FormData(this);
-
-            fetch('employee_actions.php?action=add', {
-                method: 'POST',
-                body: formData
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('Employee Registered Successfully!');
-                        window.location.href = 'wereda_hr_employees.php';
-                    } else {
-                        alert('Error: ' + data.message);
-                        btn.innerHTML = originalContent;
-                        btn.disabled = false;
-                    }
-                })
-                .catch(err => {
-                    alert('Network error. Please check your connection.');
-                    btn.innerHTML = originalContent;
-                    btn.disabled = false;
-                });
-        });
-
-        function toggleOtherField(select, targetId) {
-            const group = document.getElementById(targetId);
-            if (select.value === 'other') {
-                group.style.display = 'block';
-                group.querySelector('input, textarea')?.setAttribute('required', 'required');
-            } else {
-                group.style.display = 'none';
-                group.querySelector('input, textarea')?.removeAttribute('required');
-            }
-        }
-
-        function toggleCreditFile(select) {
-            const group = document.getElementById('creditFileGroup');
-            if (select.value === 'active') {
-                group.style.display = 'block';
-            } else {
-                group.style.display = 'none';
-            }
-        }
-
-        function toggleFinScan(input) {
-            const group = document.getElementById('finScanGroup');
-            group.style.display = input.value.trim() !== '' ? 'block' : 'none';
-        }
-
-        function toggleCriminalFile(select) {
-            const group = document.getElementById('criminalFileGroup');
-            group.style.display = select.value === 'yes' ? 'block' : 'none';
-        }
-
-        function toggleWarrantyFields(select) {
-            const group = document.getElementById('warrantyFields');
-            group.style.display = select.value === 'yes' ? 'grid' : 'none';
-        }
-    </script>
 </body>
 
 </html>

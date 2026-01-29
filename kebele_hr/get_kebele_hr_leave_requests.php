@@ -29,7 +29,7 @@ if ($table_check->num_rows === 0) {
 }
 
 // Get leave requests for employees in this kebele (check both kebele and working_kebele)
-$result = $conn->query("SELECT lr.*, e.first_name, e.last_name, e.department_assigned as department 
+$result = $conn->query("SELECT lr.*, e.first_name, e.last_name, e.department_assigned as department, e.phone_number 
                        FROM leave_requests lr 
                        JOIN employees e ON lr.employee_id = e.employee_id 
                        WHERE (e.kebele = '$kebele' OR e.working_kebele = '$kebele') AND lr.status = 'pending' 
@@ -37,6 +37,7 @@ $result = $conn->query("SELECT lr.*, e.first_name, e.last_name, e.department_ass
 
 $leave_requests = [];
 while ($row = $result->fetch_assoc()) {
+    $row['leave_document'] = $row['supporting_document'];
     $leave_requests[] = $row;
 }
 
