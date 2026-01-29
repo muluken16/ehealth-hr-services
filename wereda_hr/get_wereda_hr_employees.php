@@ -15,10 +15,18 @@ $status = $_GET['status'] ?? '';
 $department = $_GET['department'] ?? '';
 $gender = $_GET['gender'] ?? '';
 
+// Get the logged-in woreda HR's woreda
+$user_woreda = $_SESSION['woreda'] ?? 'Woreda 1';
+
 try {
     $where = [];
     $params = [];
     $types = '';
+
+    // Filter by wereda HR's woreda (only show employees registered by this woreda HR)
+    $where[] = "working_woreda = ?";
+    $params[] = $user_woreda;
+    $types .= 's';
 
     if (!empty($search)) {
         $where[] = "(first_name LIKE ? OR last_name LIKE ? OR employee_id LIKE ? OR position LIKE ?)";

@@ -402,11 +402,16 @@ switch ($action) {
 
     case 'delete':
         $employee_id = $_POST['employee_id'] ?? '';
-        $stmt = $conn->prepare("DELETE FROM employees WHERE employee_id=?");
-        $stmt->bind_param('s', $employee_id);
+        $user_woreda = $_SESSION['woreda'] ?? 'Woreda 1';
+        $stmt = $conn->prepare("DELETE FROM employees WHERE employee_id=? AND working_woreda=?");
+        $stmt->bind_param('ss', $employee_id, $user_woreda);
         if ($stmt->execute()) {
-            $response['success'] = true;
-            $response['message'] = 'Employee deleted';
+            if ($stmt->affected_rows > 0) {
+                $response['success'] = true;
+                $response['message'] = 'Employee deleted successfully';
+            } else {
+                $response['message'] = 'Employee not found or you do not have permission to delete this record';
+            }
         } else {
             $response['message'] = $stmt->error;
         }
@@ -419,8 +424,8 @@ switch ($action) {
         $status = $_GET['status'] ?? '';
 
         $sql = "SELECT employee_id, first_name, last_name, gender, department_assigned, position, salary, status, join_date, phone_number, email 
-                FROM employees WHERE woreda LIKE ?";
-        $params = ["%$user_woreda%"];
+                FROM employees WHERE working_woreda = ?";
+        $params = [$user_woreda];
         $types = "s";
 
         if (!empty($search)) {
