@@ -1,0 +1,17 @@
+# Prevent directory browsing
+Options -Indexes
+
+# Enable rewrite engine
+RewriteEngine On
+
+# If the request is for a file that exists, serve it directly
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# If the request is for a directory that exists, serve it directly
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Add .php extension if the file exists
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^(.+)$ $1.php [L]
