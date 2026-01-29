@@ -191,7 +191,7 @@ body {
 .menu-item a {
     display: flex;
     align-items: center;
-    padding: 15px 20px;
+    padding: 10px 15px;
     color: rgba(255, 255, 255, 0.8);
     text-decoration: none;
     transition: all 0.3s;
