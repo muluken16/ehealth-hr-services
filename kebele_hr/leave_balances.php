@@ -1,5 +1,9 @@
 <?php
 session_start();
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['role'])) {
+    header("Location: ../login.php");
+    exit();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -7,294 +11,366 @@ session_start();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leave Intelligence Hub | Management</title>
+    <title>Leave Balances | HR Intelligence</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../style/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* Modern Single-Column Card Feed Dashboard */
         :root {
-            --primary: #1e293b;
-            --secondary: #6366f1;
-            --accent: #10b981;
-            --bg-body: #f8fafc;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            --accent-green: #10b981;
+            --accent-blue: #3b82f6;
+            --accent-red: #ef4444;
+            --accent-yellow: #f59e0b;
         }
 
         body {
-            background-color: var(--bg-body);
-            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-            color: var(--text-main);
+            background-color: #f1f5f9;
+            font-family: 'Outfit', sans-serif;
+            color: #1e293b;
         }
 
         .main-wrapper {
-            max-width: 800px;
+            padding: 20px;
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 40px 20px;
         }
 
-        .hub-intro {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .hub-intro h1 {
-            font-size: 36px;
-            font-weight: 800;
-            letter-spacing: -1.5px;
-            margin-bottom: 12px;
-            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .hub-intro p {
-            color: var(--text-muted);
-            font-size: 16px;
-            font-weight: 500;
-        }
-
-        .search-wrapper {
+        /* Stats Overview */
+        .hub-header {
+            background: var(--primary-gradient);
+            padding: 40px;
+            border-radius: 30px;
+            color: white;
+            margin-bottom: 30px;
             position: relative;
-            margin-bottom: 35px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px -15px rgba(79, 70, 229, 0.3);
         }
 
-        .search-wrapper i {
+        .hub-header::after {
+            content: '';
             position: absolute;
-            left: 20px;
-            top: 50%;
-            transform: translateY(-50%);
+            top: -50px;
+            right: -50px;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+
+        .hub-header h1 {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .hub-header p {
+            opacity: 0.9;
+            font-size: 15px;
+            max-width: 500px;
+            line-height: 1.6;
+        }
+
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .stat-badge {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-badge .label {
+            display: block;
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .stat-badge .value {
+            font-size: 24px;
+            font-weight: 800;
+        }
+
+        /* Search Bar */
+        .search-area {
+            position: sticky;
+            top: 20px;
+            z-index: 100;
+            margin-bottom: 30px;
+        }
+
+        .search-input-wrapper {
+            background: white;
+            border-radius: 20px;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            box-shadow: var(--card-shadow);
+            border: 1px solid #e2e8f0;
+        }
+
+        .search-input-wrapper i {
+            padding-left: 20px;
             color: #94a3b8;
             font-size: 18px;
         }
 
-        .search-wrapper input {
+        .search-input-wrapper input {
             width: 100%;
-            padding: 18px 25px 18px 55px;
-            border: 2px solid white;
-            border-radius: 20px;
-            font-size: 16px;
-            font-weight: 600;
-            background: white;
-            box-shadow: var(--card-shadow);
+            padding: 15px 20px;
+            border: none;
             outline: none;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 500;
+            border-radius: 20px;
+        }
+
+        /* Grid Layout */
+        .balance-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 35px;
+        }
+
+        @media (max-width: 1024px) { .balance-grid { grid-template-columns: 1fr; } }
+
+        /* Card Design */
+        .employee-balance-card {
+            background: white;
+            border-radius: 30px;
+            padding: 35px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid #f1f5f9;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .search-wrapper input:focus {
-            border-color: var(--secondary);
-            transform: translateY(-2px);
-            box-shadow: 0 15px 35px -10px rgba(99, 102, 241, 0.15);
-        }
-
-        .card-feed {
             display: flex;
             flex-direction: column;
-            gap: 24px;
-        }
-
-        .employee-profile-card {
-            background: white;
-            border-radius: 24px;
-            padding: 28px;
-            border: 1px solid #f1f5f9;
-            box-shadow: var(--card-shadow);
-            transition: all 0.3s ease;
+            gap: 25px;
             position: relative;
             overflow: hidden;
         }
 
-        .employee-profile-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.1);
-            border-color: #e2e8f0;
+        .employee-balance-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.12);
+            border-color: #cbd5e1;
         }
 
-        .profile-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-
-        .profile-main {
+        .card-header {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 25px;
         }
 
-        .profile-avatar {
-            width: 60px;
-            height: 60px;
-            border-radius: 18px;
-            background: linear-gradient(135deg, #1e293b, #475569);
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 22px;
+            background: #f1f5f9;
+            color: #4f46e5;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
             font-weight: 800;
-            font-size: 22px;
-            box-shadow: 0 8px 15px rgba(30, 41, 59, 0.2);
+            font-size: 28px;
+            border: 1px solid #e2e8f0;
+            flex-shrink: 0;
         }
 
-        .profile-details h2 {
+        .emp-info h3 {
             margin: 0;
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 800;
             color: #1e293b;
         }
 
-        .profile-details p {
-            margin: 2px 0 0;
-            font-size: 13px;
-            color: var(--text-muted);
+        .emp-info span {
+            font-size: 14px;
+            color: #64748b;
             font-weight: 600;
         }
 
-        .tenure-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 5px 12px;
-            border-radius: 10px;
-            font-size: 11px;
-            font-weight: 800;
+        .tenure-badge {
+            display: inline-block;
             margin-top: 8px;
+            background: #eff6ff;
+            color: #2563eb;
+            font-size: 12px;
+            font-weight: 800;
+            padding: 5px 14px;
+            border-radius: 8px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
-        .tag-active {
-            background: #f0fdf4;
-            color: #166534;
-            border: 1px solid #dcfce7;
+        .tenure-badge.probation {
+            background: #fff1f2;
+            color: #e11d48;
         }
 
-        .tag-probation {
-            background: #fef2f2;
-            color: #991b1b;
-            border: 1px solid #fee2e2;
-        }
-
-        .leave-status-row {
+        /* Quota Grid */
+        .quota-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .quota-box {
             background: #f8fafc;
-            padding: 15px;
-            border-radius: 18px;
+            padding: 18px;
+            border-radius: 20px;
+            text-align: center;
             border: 1px solid #f1f5f9;
         }
 
-        .leave-stat-box {
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
+        .quota-box.ineligible {
+            background: #f1f5f9;
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
-        .stat-value {
-            font-size: 18px;
+        .quota-box .q-label {
+            display: block;
+            font-size: 11px;
+            color: #94a3b8;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .quota-box .q-value {
+            font-size: 24px;
             font-weight: 800;
             color: #0f172a;
         }
 
-        .stat-label {
-            font-size: 10px;
+        .quota-box .q-total {
+            font-size: 12px;
+            color: #cbd5e1;
             font-weight: 700;
-            color: #64748b;
-            text-transform: uppercase;
         }
 
-        .stat-bonus {
-            font-size: 9px;
-            color: var(--secondary);
-            font-weight: 800;
-            margin-top: 2px;
+        /* Action Footer */
+        .card-footer {
+            margin-top: auto;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 15px;
+            display: flex;
+            gap: 10px;
         }
 
-        .btn-update-profile {
-            background: #fff;
-            color: #1e293b;
-            border: 1.5px solid #e2e8f0;
-            padding: 10px 18px;
+        .btn-action {
+            flex: 1;
+            padding: 10px;
             border-radius: 12px;
-            font-size: 13px;
+            border: 1.5px solid #e2e8f0;
+            background: white;
+            color: #475569;
+            font-size: 12px;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: 0.2s;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
         }
 
-        .btn-update-profile:hover {
-            background: #1e293b;
-            color: white;
-            border-color: #1e293b;
+        .btn-action:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            color: #1e293b;
         }
 
-        .locked-stat {
-            background: #f1f5f9;
-            opacity: 0.7;
-            position: relative;
+        .btn-action.edit:hover {
+            border-color: #4f46e5;
+            color: #4f46e5;
         }
 
-        .locked-stat::after {
-            content: '\f023';
-            font-family: 'Font Awesome 6 Free';
-            font-weight: 900;
-            font-size: 10px;
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            color: #94a3b8;
-        }
-
-        .success-modal {
+        /* Modal Overwrite */
+        .modal-glass {
             display: none;
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(15, 23, 42, 0.7);
-            backdrop-filter: blur(8px);
-            z-index: 99999;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
             justify-content: center;
             align-items: center;
-            padding: 20px;
-            transition: all 0.3s;
         }
 
-        .success-modal.show {
-            display: flex;
-        }
+        .modal-glass.show { display: flex; }
 
-        .success-modal-content {
+        .modal-content-premium {
             background: white;
-            border-radius: 24px;
-            padding: 35px;
-            width: 100%;
-            max-width: 500px;
-            position: relative;
+            border-radius: 30px;
+            width: 90%;
+            max-width: 550px;
+            padding: 40px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: modalSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        @keyframes modalPop {
-            from {
-                opacity: 0;
-                transform: scale(0.9) translateY(20px);
-            }
+        @keyframes modalSlide {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
 
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
+        .input-premium {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #f1f5f9;
+            border-radius: 12px;
+            outline: none;
+            font-family: inherit;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .input-premium:focus {
+            border-color: #4f46e5;
+            background: #f5f3ff;
+        }
+
+        .label-premium {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 8px;
+        }
+
+        .btn-save-premium {
+            background: #4f46e5;
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+            border: none;
+            width: 100%;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+            transition: 0.2s;
+        }
+
+        .btn-save-premium:hover {
+            background: #4338ca;
+            transform: translateY(-2px);
         }
     </style>
 </head>
@@ -304,240 +380,234 @@ session_start();
         <?php include 'sidebar.php'; ?>
 
         <main class="main-content">
-            <?php
-            $page_title = "Update Leave Quotas";
-            include 'navbar.php';
-            ?>
-
-            <div class="main-wrapper">
-                <div class="hub-intro">
-                    <h1>Leave Balances Hub</h1>
-                    <p>Dynamic tenure calculation, carry-forward tracking, and legal entitlement management.</p>
+            <div class="main-wrapper" style="padding: 10px 20px;">
+                <div class="search-area" style="margin-bottom: 20px;">
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="balanceSearch" placeholder="Search by name, ID or department..." onkeyup="filterBalances()">
+                    </div>
                 </div>
 
-                <div class="search-wrapper">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="empSearch" placeholder="Find employee by name, ID or role..."
-                        onkeyup="searchBalances()">
-                </div>
-
-                <div id="cardsContainer" class="card-feed">
-                    <div style="text-align: center; padding: 60px; color: #64748b;">
-                        <i class="fas fa-spinner fa-spin fa-2x"></i>
-                        <p style="margin-top: 15px; font-weight: 600;">Authenticating legal balances...</p>
+                <div id="balancesList" class="balance-grid">
+                    <!-- Dynamic Cards -->
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 100px;">
+                        <i class="fas fa-circle-notch fa-spin fa-2x" style="color: #4f46e5;"></i>
+                        <p style="margin-top: 15px; font-weight: 600; color: #64748b;">Synchronising leave data...</p>
                     </div>
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- Centered Update Modal -->
-    <div class="success-modal" id="editBalanceModal">
-        <div class="success-modal-content" style="max-width: 480px; text-align: left; padding: 40px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-                <h3 style="margin: 0; font-weight: 800; color: #1e293b;">Modify Annual Quota</h3>
-                <i class="fas fa-times" onclick="closeEditModal()"
-                    style="cursor: pointer; color: #94a3b8; font-size: 20px;"></i>
+    <!-- Edit Modal -->
+    <div class="modal-glass" id="editModal">
+        <div class="modal-content-premium">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px;">
+                <div>
+                    <h2 style="margin: 0; font-size: 20px; font-weight: 800;">Modify Leave Quota</h2>
+                    <p style="margin: 5px 0 0; font-size: 13px; color: #64748b;" id="editEmpSub">Updating balances for employee</p>
+                </div>
+                <button onclick="closeModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #94a3b8;">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
 
-            <form id="editBalanceForm" onsubmit="updateEntitlements(event)">
-                <input type="hidden" name="employee_id" id="editEmpId">
-                <div id="editEmpBadge"
-                    style="background: #eff6ff; padding: 15px; border-radius: 15px; font-weight: 800; color: #1d4ed8; margin-bottom: 30px; border-left: 6px solid #1d4ed8;">
-                    Loading...</div>
-
-                <div class="update-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                    <div class="input-box" style="display: flex; flex-direction: column; gap: 8px;">
-                        <label style="font-size: 13px; font-weight: 700; color: #475569;">Annual Total</label>
-                        <input type="number" name="annual_leave_days" id="editAnnual" required
-                            style="padding: 12px; border: 2.5px solid #f1f5f9; border-radius: 12px; outline: none; transition: 0.2s;">
+            <form id="editBalanceForm" onsubmit="saveChanges(event)">
+                <input type="hidden" id="editEmpId" name="employee_id">
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                    <div>
+                        <label class="label-premium">Annual Base</label>
+                        <input type="number" name="annual_leave_days" id="inAnnual" class="input-premium">
                     </div>
-                    <div class="input-box" style="display: flex; flex-direction: column; gap: 8px;">
-                        <label style="font-size: 13px; font-weight: 700; color: #475569;">Annual Used</label>
-                        <input type="number" name="used_annual_leave" id="editUsedAnnual" required
-                            style="padding: 12px; border: 2.5 solid #f1f5f9; border-radius: 12px; outline: none; transition: 0.2s;">
+                    <div>
+                        <label class="label-premium">Carry Forward</label>
+                        <input type="number" name="carry_forward_days" id="inCarry" class="input-premium">
                     </div>
-                    <div class="input-box" style="display: flex; flex-direction: column; gap: 8px;">
-                        <label style="font-size: 13px; font-weight: 700; color: #475569;">Sick Total</label>
-                        <input type="number" name="sick_leave_days" id="editSick" required
-                            style="padding: 12px; border: 2.5px solid #f1f5f9; border-radius: 12px; outline: none; transition: 0.2s;">
+                    <div style="grid-column: span 2;">
+                        <label class="label-premium">Annual Used (Current)</label>
+                        <input type="number" name="used_annual_leave" id="inAnnualUsed" class="input-premium">
                     </div>
-                    <div class="input-box" style="display: flex; flex-direction: column; gap: 8px;">
-                        <label style="font-size: 13px; font-weight: 700; color: #475569;">Sick Used</label>
-                        <input type="number" name="used_sick_leave" id="editUsedSick" required
-                            style="padding: 12px; border: 2.5px solid #f1f5f9; border-radius: 12px; outline: none; transition: 0.2s;">
+                    <hr style="grid-column: span 2; border: none; border-top: 1px solid #f1f5f9; margin: 10px 0;">
+                    <div>
+                        <label class="label-premium">Sick Total</label>
+                        <input type="number" name="sick_leave_days" id="inSick" class="input-premium">
                     </div>
-                    <div class="input-box" style="display: flex; flex-direction: column; gap: 8px;">
-                        <label style="font-size: 13px; font-weight: 700; color: #475569;">Emergency Total</label>
-                        <input type="number" name="emergency_leave_days" id="editEmergency" required
-                            style="padding: 12px; border: 2.5px solid #f1f5f9; border-radius: 12px; outline: none; transition: 0.2s;">
+                    <div>
+                        <label class="label-premium">Sick Used</label>
+                        <input type="number" name="used_sick_leave" id="inSickUsed" class="input-premium">
                     </div>
-                    <div class="input-box" style="display: flex; flex-direction: column; gap: 8px;">
-                        <label style="font-size: 13px; font-weight: 700; color: #475569;">Emergency Used</label>
-                        <input type="number" name="used_emergency_leave" id="editUsedEmergency" required
-                            style="padding: 12px; border: 2.5px solid #f1f5f9; border-radius: 12px; outline: none; transition: 0.2s;">
+                    <div>
+                        <label class="label-premium">Emergency Total</label>
+                        <input type="number" name="emergency_leave_days" id="inEmergency" class="input-premium">
+                    </div>
+                    <div>
+                        <label class="label-premium">Emergency Used</label>
+                        <input type="number" name="used_emergency_leave" id="inEmergencyUsed" class="input-premium">
                     </div>
                 </div>
 
-                <div style="margin-top: 35px; display: flex; gap: 15px;">
-                    <button type="button" onclick="closeEditModal()"
-                        style="flex: 1; padding: 15px; border-radius: 15px; border: 1.5px solid #e2e8f0; background: white; font-weight: 700; cursor: pointer;">Discard</button>
-                    <button type="submit" id="saveBtn"
-                        style="flex: 2; padding: 15px; border-radius: 15px; border: none; background: #1e293b; color: white; font-weight: 700; cursor: pointer;">Save
-                        Modifications</button>
+                <div style="display: flex; gap: 15px;">
+                    <button type="button" onclick="closeModal()" class="btn-action" style="padding: 15px;">Discard</button>
+                    <button type="submit" class="btn-save-premium">Save Entitlements</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Success Alert Popup -->
-    <div class="success-modal" id="successPopup">
-        <div class="success-modal-content"
-            style="max-width: 400px; text-align: center; padding: 40px; border-radius: 30px;">
-            <div
-                style="width: 80px; height: 80px; background: #f0fdf4; color: #166534; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 35px; border: 2px solid #dcfce7;">
-                <i class="fas fa-check"></i>
-            </div>
-            <h3 style="margin: 0 0 10px; font-weight: 800; color: #1e293b; font-size: 24px;">Quota Updated!</h3>
-            <p style="color: #64748b; font-weight: 500; margin-bottom: 25px;">The employee's leave balance has been
-                successfully adjusted and synchronized.</p>
-            <button onclick="closeSuccessPopup()"
-                style="width: 100%; padding: 15px; border-radius: 15px; border: none; background: #1e293b; color: white; font-weight: 700; cursor: pointer; transition: 0.2s;">Great,
-                Thanks!</button>
-        </div>
-    </div>
-
     <script>
-        let balanceData = [];
+        let fullData = [];
 
-        document.addEventListener('DOMContentLoaded', () => loadAllBalances());
+        document.addEventListener('DOMContentLoaded', loadBalances);
 
-        function loadAllBalances() {
+        function loadBalances() {
             fetch('get_all_leave_balances.php')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        balanceData = data.data;
-                        renderFeed(balanceData);
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success) {
+                        fullData = res.data;
+                        const avgEl = document.getElementById('avgAnnualVal');
+                        const lowEl = document.getElementById('lowBalCount');
+                        const totEl = document.getElementById('totalEmpCount');
+                        
+                        if(avgEl) avgEl.innerText = res.stats.avg_annual.toFixed(1);
+                        if(lowEl) lowEl.innerText = res.stats.low_balance_count;
+                        if(totEl) totEl.innerText = res.stats.total_employees;
+                        
+                        renderCards(fullData);
                     }
                 });
         }
 
-        function renderFeed(data) {
-            const container = document.getElementById('cardsContainer');
+        function renderCards(data) {
+            const container = document.getElementById('balancesList');
             container.innerHTML = '';
 
             if (data.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 50px; color: #64748b; font-weight: 600;">No employees found.</div>';
+                container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 50px; color: #94a3b8;">No records found matching your criteria.</div>';
                 return;
             }
 
-            data.forEach(item => {
-                const annualRem = item.annual_leave_days - item.used_annual_leave;
-                const sickRem = item.sick_leave_days - item.used_sick_leave;
-                const emergencyRem = item.emergency_leave_days - item.used_emergency_leave;
-                const serviceYears = parseInt(item.service_years);
+            data.forEach(emp => {
+                const initials = (emp.first_name?.[0] || 'E') + (emp.last_name?.[0] || 'M');
+                const isProbation = parseInt(emp.service_years) < 1;
+                
+                const avatarContent = emp.photo 
+                    ? `<img src="../uploads/employees/${emp.photo}" style="width:100%; height:100%; object-fit:cover; border-radius:15px;">`
+                    : initials;
 
-                const initials = (item.first_name[0] + item.last_name[0]).toUpperCase();
-                const genderLabel = item.gender === 'female' ? 'Maternity' : 'Paternity';
-                const genderVal = item.gender === 'female' ? (item.maternity_leave_days - item.used_maternity_leave) : (item.paternity_leave_days - item.used_paternity_leave);
-
-                let annualHtml = '';
-                if (serviceYears < 1) {
-                    annualHtml = `<div class="leave-stat-box locked-stat">
-                                    <span class="stat-value">0</span>
-                                    <span class="stat-label">Ineligible</span>
-                                  </div>`;
-                } else {
-                    const bonusLine = item.tenure_bonus > 0 ? `<div class="stat-bonus">+${item.tenure_bonus} Carry/Bonus</div>` : '';
-                    annualHtml = `<div class="leave-stat-box">
-                                    <span class="stat-value" style="color: #6366f1;">${annualRem}<small style="font-size: 11px; opacity:0.5;">/${item.annual_leave_days}</small></span>
-                                    <span class="stat-label">Annual</span>
-                                    ${bonusLine}
-                                  </div>`;
-                }
+                const annualRem = (parseInt(emp.annual_leave_days) + parseInt(emp.carry_forward_days)) - parseInt(emp.used_annual_leave);
+                const annualTotal = parseInt(emp.annual_leave_days) + parseInt(emp.carry_forward_days);
+                
+                const sickRem = parseInt(emp.sick_leave_days) - parseInt(emp.used_sick_leave);
+                const emerRem = parseInt(emp.emergency_leave_days) - parseInt(emp.used_emergency_leave);
+                const marRem = parseInt(emp.marriage_leave_days) - parseInt(emp.used_marriage_leave);
+                const berRem = parseInt(emp.bereavement_leave_days) - parseInt(emp.used_bereavement_leave);
+                
+                // Carry forward breakdown for UI
+                const carryText = emp.carry_forward_days > 0 ? `<div style="font-size: 10px; color: #4f46e5; font-weight: 700;">Includes +${emp.carry_forward_days} Carry</div>` : '';
 
                 const card = document.createElement('div');
-                card.className = 'employee-profile-card';
+                card.className = 'employee-balance-card';
                 card.innerHTML = `
-                    <div class="profile-header">
-                        <div class="profile-main">
-                            <div class="profile-avatar">${initials}</div>
-                            <div class="profile-details">
-                                <h2>${item.first_name} ${item.last_name}</h2>
-                                <p>${item.employee_id} • ${item.department_assigned}</p>
-                                <div style="display:flex; gap:10px; align-items:center;">
-                                    ${serviceYears < 1 ? '<span class="tenure-tag tag-probation">Less than 1yr</span>' : '<span class="tenure-tag tag-active">Active • ' + serviceYears + ' Year(s)</span>'}
-                                    <span style="font-size: 11px; color:#94a3b8; font-weight:600; margin-top:8px;">Since ${new Date(item.join_date).toLocaleDateString()}</span>
-                                </div>
-                            </div>
+                    <div class="card-header">
+                        <div class="avatar" style="padding:0; overflow:hidden;">${avatarContent}</div>
+                        <div class="emp-info">
+                            <h3>${emp.first_name} ${emp.last_name}</h3>
+                            <span>${emp.employee_id} • ${emp.department_assigned}</span>
+                            <br>
+                            ${isProbation 
+                                ? '<span class="tenure-badge probation">Under Probation (<1yr)</span>' 
+                                : `<span class="tenure-badge">Active • ${emp.service_years} Years</span>`
+                            }
                         </div>
-                        <button class="btn-update-profile" onclick="openEditModal('${item.employee_id}')">
-                            <i class="fas fa-edit"></i> Update
-                        </button>
                     </div>
 
-                    <div class="leave-status-row">
-                        ${annualHtml}
-                        <div class="leave-stat-box">
-                            <span class="stat-value" style="color: #10b981;">${sickRem}<small style="font-size: 11px; opacity:0.5;">/${item.sick_leave_days}</small></span>
-                            <span class="stat-label">Sick Leave</span>
+                    <div class="quota-grid" style="grid-template-columns: repeat(3, 1fr);">
+                        <div class="quota-box ${isProbation ? 'ineligible' : ''}">
+                            <span class="q-label">Annual</span>
+                            <span class="q-value" style="color: ${annualRem < 5 ? '#e11d48' : '#4f46e5'}">${isProbation ? '0' : annualRem}</span>
+                            <span class="q-total">/${isProbation ? '0' : annualTotal}</span>
                         </div>
-                        <div class="leave-stat-box">
-                            <span class="stat-value" style="color: #f59e0b;">${emergencyRem}<small style="font-size: 11px; opacity:0.5;">/${item.emergency_leave_days}</small></span>
-                            <span class="stat-label">Emergency</span>
+                        <div class="quota-box">
+                            <span class="q-label">Sick</span>
+                            <span class="q-value">${sickRem}</span>
                         </div>
-                        <div class="leave-stat-box">
-                            <span class="stat-value" style="color: #475569;">${genderVal}</span>
-                            <span class="stat-label">${genderLabel}</span>
+                        <div class="quota-box">
+                            <span class="q-label">Emergency</span>
+                            <span class="q-value" style="color:#f59e0b;">${emerRem}</span>
                         </div>
+                        <div class="quota-box" style="background:#fff7ed;">
+                            <span class="q-label">Marriage</span>
+                            <span class="q-value" style="color:#f97316;">${marRem}</span>
+                        </div>
+                        <div class="quota-box" style="background:#f0fdfa;">
+                            <span class="q-label">Bereave.</span>
+                            <span class="q-value" style="color:#0d9488;">${berRem}</span>
+                        </div>
+                        <div class="quota-box" style="background:#fef2f2;">
+                            <span class="q-label">${emp.gender === 'female' ? 'Maternity' : 'Paternity'}</span>
+                            <span class="q-value" style="color:#b91c1c;">${emp.gender === 'female' ? (emp.maternity_leave_days - emp.used_maternity_leave) : (emp.paternity_leave_days - emp.used_paternity_leave)}</span>
+                        </div>
+                    </div>
+
+                    ${carryText}
+
+                    <div class="card-footer">
+                        <button class="btn-action edit" onclick="openEditModal('${emp.employee_id}')">
+                            <i class="fas fa-sliders-h"></i> Adjust Quotas
+                        </button>
+                        <button class="btn-action" onclick="window.location.href='hr-leave.php?emp=${emp.employee_id}'">
+                            <i class="fas fa-history"></i> Log
+                        </button>
                     </div>
                 `;
                 container.appendChild(card);
             });
         }
 
-        function searchBalances() {
-            const query = document.getElementById('empSearch').value.toLowerCase();
-            const filtered = balanceData.filter(item =>
-                item.first_name.toLowerCase().includes(query) ||
-                item.last_name.toLowerCase().includes(query) ||
-                item.employee_id.toLowerCase().includes(query) ||
-                item.department_assigned.toLowerCase().includes(query)
+        function filterBalances() {
+            const query = document.getElementById('balanceSearch').value.toLowerCase();
+            const filtered = fullData.filter(e => 
+                `${e.first_name} ${e.last_name}`.toLowerCase().includes(query) ||
+                e.employee_id.toLowerCase().includes(query) ||
+                e.department_assigned.toLowerCase().includes(query)
             );
-            renderFeed(filtered);
+            renderCards(filtered);
         }
 
-        function openEditModal(empId) {
-            const emp = balanceData.find(e => e.employee_id === empId);
+        function openEditModal(id) {
+            const emp = fullData.find(e => e.employee_id === id);
             if (!emp) return;
+
             document.getElementById('editEmpId').value = emp.employee_id;
-            document.getElementById('editEmpBadge').textContent = emp.first_name + ' ' + emp.last_name;
-            document.getElementById('editAnnual').value = emp.annual_leave_days;
-            document.getElementById('editUsedAnnual').value = emp.used_annual_leave;
-            document.getElementById('editSick').value = emp.sick_leave_days;
-            document.getElementById('editUsedSick').value = emp.used_sick_leave;
-            document.getElementById('editEmergency').value = emp.emergency_leave_days;
-            document.getElementById('editUsedEmergency').value = emp.used_emergency_leave;
-            document.getElementById('editBalanceModal').classList.add('show');
+            document.getElementById('editEmpSub').innerText = `${emp.first_name} ${emp.last_name} (${emp.employee_id})`;
+            
+            document.getElementById('inAnnual').value = emp.annual_leave_days;
+            document.getElementById('inCarry').value = emp.carry_forward_days;
+            document.getElementById('inAnnualUsed').value = emp.used_annual_leave;
+            document.getElementById('inSick').value = emp.sick_leave_days;
+            document.getElementById('inSickUsed').value = emp.used_sick_leave;
+            document.getElementById('inEmergency').value = emp.emergency_leave_days;
+            document.getElementById('inEmergencyUsed').value = emp.used_emergency_leave;
+
+            document.getElementById('editModal').classList.add('show');
         }
 
-        function closeEditModal() {
-            document.getElementById('editBalanceModal').classList.remove('show');
+        function closeModal() {
+            document.getElementById('editModal').classList.remove('show');
         }
 
-        function closeSuccessPopup() {
-            document.getElementById('successPopup').classList.remove('show');
-        }
-
-        function updateEntitlements(e) {
+        function saveChanges(e) {
             e.preventDefault();
-            const btn = document.getElementById('saveBtn');
+            const form = e.target;
+            const btn = form.querySelector('.btn-save-premium');
             const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Processing...';
+
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Synchronising...';
             btn.disabled = true;
 
-            const formData = new FormData(e.target);
+            const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
 
             fetch('update_leave_entitlements.php', {
@@ -545,23 +615,20 @@ session_start();
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        closeEditModal();
-                        loadAllBalances();
-                        // Show Premium Success Popup
-                        setTimeout(() => {
-                            document.getElementById('successPopup').classList.add('show');
-                        }, 300);
-                    } else {
-                        alert('Error: ' + data.message);
-                    }
-                })
-                .finally(() => {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                });
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    closeModal();
+                    loadBalances();
+                    // Optional: Add a toast notification here
+                } else {
+                    alert('Sync Error: ' + res.message);
+                }
+            })
+            .finally(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
         }
     </script>
 </body>

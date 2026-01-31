@@ -198,11 +198,71 @@ function displayFiles($jsonStr, $icon = 'fa-file')
             background: #f8fafc;
         }
 
+        .btn-clear-files {
+            background: #fef2f2;
+            color: #ef4444;
+            border: 1px solid #fee2e2;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+
+        .btn-clear-files:hover {
+            background: #fee2e2;
+        }
+
+        .file-item-preview {
+            background: #f1f5f9;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #475569;
+            font-size: 0.85rem;
+        }
+
         .form-control-edit:focus {
             outline: none;
             border-color: var(--primary);
             box-shadow: 0 0 0 4px rgba(26, 74, 95, 0.05);
             background: white;
+        }
+
+        .conditional-field {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 1px dashed #cbd5e1;
+        }
+
+        .conditional-field.show {
+            display: block;
+        }
+
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            background: #f8fafc;
+            transition: all 0.2s;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: #eef2ff;
         }
 
         .action-bar {
@@ -351,15 +411,21 @@ function displayFiles($jsonStr, $icon = 'fa-file')
 
                         <div class="nav-sections">
                             <div class="nav-item active" onclick="scrollToSection('personal')"><i
-                                    class="fas fa-user"></i> Personal Details</div>
+                                    class="fas fa-user-circle"></i> Personal</div>
+                            <div class="nav-item" onclick="scrollToSection('education')"><i
+                                    class="fas fa-graduation-cap"></i> Education</div>
                             <div class="nav-item" onclick="scrollToSection('employment')"><i
                                     class="fas fa-briefcase"></i> Employment</div>
                             <div class="nav-item" onclick="scrollToSection('location')"><i
-                                    class="fas fa-map-marker-alt"></i> Contact & Address</div>
+                                    class="fas fa-map-marker-alt"></i> Address</div>
                             <div class="nav-item" onclick="scrollToSection('financial')"><i
-                                    class="fas fa-university"></i> Banking & Finance</div>
+                                    class="fas fa-university"></i> Banking</div>
                             <div class="nav-item" onclick="scrollToSection('warranty')"><i
-                                    class="fas fa-shield-alt"></i> Warranty & Legal</div>
+                                    class="fas fa-shield-halved"></i> Warranty</div>
+                            <div class="nav-item" onclick="scrollToSection('legal')"><i
+                                    class="fas fa-gavel"></i> Legal</div>
+                            <div class="nav-item" onclick="scrollToSection('documents')"><i
+                                    class="fas fa-folder-open"></i> Documents</div>
                         </div>
                     </div>
 
@@ -405,11 +471,97 @@ function displayFiles($jsonStr, $icon = 'fa-file')
                                         <label>Marital Status</label>
                                         <select name="marital_status" class="form-control-edit">
                                             <option value="single" <?php echo $employee['marital_status'] == 'single' ? 'selected' : ''; ?>>Single</option>
-                                            <option value="married" <?php echo $employee['marital_status'] == 'married' ? 'selected' : ''; ?>>Married
-                                            </option>
-                                            <option value="divorced" <?php echo $employee['marital_status'] == 'divorced' ? 'selected' : ''; ?>>Divorced
-                                            </option>
+                                            <option value="married" <?php echo $employee['marital_status'] == 'married' ? 'selected' : ''; ?>>Married</option>
+                                            <option value="divorced" <?php echo $employee['marital_status'] == 'divorced' ? 'selected' : ''; ?>>Divorced</option>
                                         </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Religion</label>
+                                        <?php
+                                        $religions = ["Orthodox", "Islam", "Protestant", "Catholic"];
+                                        $cur_rel = $employee['religion'] ?? '';
+                                        $is_other_rel = !empty($cur_rel) && !in_array($cur_rel, $religions);
+                                        ?>
+                                        <select name="religion" class="form-control-edit" onchange="checkOtherReligion(this)">
+                                            <option value="">Select Religion</option>
+                                            <?php foreach ($religions as $r): ?>
+                                                <option value="<?php echo $r; ?>" <?php echo $cur_rel == $r ? 'selected' : ''; ?>><?php echo $r; ?></option>
+                                            <?php endforeach; ?>
+                                            <option value="other" <?php echo $is_other_rel ? 'selected' : ''; ?>>Other</option>
+                                        </select>
+                                        <input type="text" id="otherReligion" name="other_religion" class="form-control-edit conditional-field <?php echo $is_other_rel ? 'show' : ''; ?>" value="<?php echo $is_other_rel ? safeEcho($cur_rel) : ''; ?>" placeholder="Enter religion">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Citizenship</label>
+                                        <?php
+                                        $citizenships = ["Ethiopia", "United States"];
+                                        $cur_cit = $employee['citizenship'] ?? '';
+                                        $is_other_cit = !empty($cur_cit) && !in_array($cur_cit, $citizenships);
+                                        ?>
+                                        <select name="citizenship" class="form-control-edit" onchange="checkOtherCitizenship(this)">
+                                            <option value="Ethiopia" <?php echo $cur_cit == 'Ethiopia' ? 'selected' : ''; ?>>Ethiopia</option>
+                                            <option value="United States" <?php echo $cur_cit == 'United States' ? 'selected' : ''; ?>>United States</option>
+                                            <option value="Other" <?php echo $is_other_cit ? 'selected' : ''; ?>>Other</option>
+                                        </select>
+                                        <input type="text" id="otherCitizenship" name="other_citizenship" class="form-control-edit conditional-field <?php echo $is_other_cit ? 'show' : ''; ?>" value="<?php echo $is_other_cit ? safeEcho($cur_cit) : ''; ?>" placeholder="Enter country">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Primary Language</label>
+                                        <?php
+                                        $langs = ["amharic", "oromo", "tigrigna", "english"];
+                                        $cur_lang = $employee['language'] ?? '';
+                                        $is_other_lang = !empty($cur_lang) && !in_array($cur_lang, $langs);
+                                        ?>
+                                        <select name="language" class="form-control-edit" onchange="checkOtherLanguage(this)">
+                                            <option value="amharic" <?php echo $cur_lang == 'amharic' ? 'selected' : ''; ?>>Amharic</option>
+                                            <option value="oromo" <?php echo $cur_lang == 'oromo' ? 'selected' : ''; ?>>Afaan Oromo</option>
+                                            <option value="tigrigna" <?php echo $cur_lang == 'tigrigna' ? 'selected' : ''; ?>>Tigrigna</option>
+                                            <option value="english" <?php echo $cur_lang == 'english' ? 'selected' : ''; ?>>English</option>
+                                            <option value="other" <?php echo $is_other_lang ? 'selected' : ''; ?>>Other</option>
+                                        </select>
+                                        <input type="text" id="otherLanguage" name="other_language" class="form-control-edit conditional-field <?php echo $is_other_lang ? 'show' : ''; ?>" value="<?php echo $is_other_lang ? safeEcho($cur_lang) : ''; ?>" placeholder="Enter language">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Education -->
+                            <div id="education">
+                                <div class="section-title"><i class="fas fa-graduation-cap"></i> Academic Background</div>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label>Highest Level</label>
+                                        <select name="education_level" class="form-control-edit">
+                                            <option value="">Select Level</option>
+                                            <option value="diploma" <?php echo ($employee['education_level'] ?? '') == 'diploma' ? 'selected' : ''; ?>>Diploma</option>
+                                            <option value="bachelor" <?php echo ($employee['education_level'] ?? '') == 'bachelor' ? 'selected' : ''; ?>>Bachelor's Degree</option>
+                                            <option value="master" <?php echo ($employee['education_level'] ?? '') == 'master' ? 'selected' : ''; ?>>Master's Degree</option>
+                                            <option value="phd" <?php echo ($employee['education_level'] ?? '') == 'phd' ? 'selected' : ''; ?>>PhD</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Institution</label>
+                                        <input type="text" name="university" class="form-control-edit" value="<?php safeEcho($employee['university'] ?? ''); ?>" placeholder="University/College">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Field of Study</label>
+                                        <input type="text" name="department" class="form-control-edit" value="<?php safeEcho($employee['department'] ?? ''); ?>" placeholder="e.g. Computer Science">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Secondary School</label>
+                                        <input type="text" name="secondary_school" class="form-control-edit" value="<?php safeEcho($employee['secondary_school'] ?? ''); ?>" placeholder="High School Name">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Certificate(s)</label>
+                                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                                            <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                                                <?php displayFiles($employee['education_file'] ?? '', 'fa-graduation-cap'); ?>
+                                            </div>
+                                            <div class="upload-area" onclick="document.getElementById('edu_files_edit').click()">
+                                                <i class="fas fa-cloud-upload-alt"></i> Select Document(s)
+                                                <input type="file" id="edu_files_edit" name="education_files[]" multiple style="display:none" onchange="handleFileList(this, 'edu_edit_list')">
+                                            </div>
+                                            <div id="edu_edit_list" style="font-size: 0.8rem; color: var(--secondary);"></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -515,10 +667,24 @@ function displayFiles($jsonStr, $icon = 'fa-file')
                                             <div style="display: flex; flex-wrap: wrap; gap: 5px;">
                                                 <?php displayFiles($employee['fin_scan'] ?? '', 'fa-id-card'); ?>
                                             </div>
-                                            <input type="file" name="fin_scan[]" multiple class="form-control-edit"
-                                                style="padding: 9px;" onchange="handleFileList(this, 'fin_edit_list')">
-                                            <div id="fin_edit_list" style="font-size: 0.8rem; color: var(--secondary);">
+                                            <div class="upload-area" onclick="document.getElementById('fin_scan_edit_input').click()">
+                                                <i class="fas fa-id-card"></i> Select ID(s)
+                                                <input type="file" id="fin_scan_edit_input" name="fin_scan[]" multiple style="display:none" onchange="handleFileList(this, 'fin_edit_list')">
                                             </div>
+                                            <div id="fin_edit_list" style="font-size: 0.8rem; color: var(--secondary);"></div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Employment Agreements / Contracts</label>
+                                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                                            <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                                                <?php displayFiles($employee['employment_agreement'] ?? '', 'fa-file-signature'); ?>
+                                            </div>
+                                            <div class="upload-area" onclick="document.getElementById('contract_edit_input').click()">
+                                                <i class="fas fa-file-contract"></i> Select Contract(s)
+                                                <input type="file" id="contract_edit_input" name="employment_agreements[]" multiple style="display:none" onchange="handleFileList(this, 'contract_edit_list')">
+                                            </div>
+                                            <div id="contract_edit_list" style="font-size: 0.8rem; color: var(--secondary);"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -587,7 +753,7 @@ function displayFiles($jsonStr, $icon = 'fa-file')
                                             <option value="">Select Kebele</option>
                                         </select>
                                     </div>
-
+                                    </div>
                                 </div>
                             </div>
 
@@ -597,44 +763,68 @@ function displayFiles($jsonStr, $icon = 'fa-file')
                                 <div class="form-grid">
                                     <div class="form-group">
                                         <label>Bank Name</label>
-                                        <input type="text" name="bank_name" class="form-control-edit"
-                                            value="<?php safeEcho($employee['bank_name']); ?>">
+                                        <input type="text" name="bank_name" class="form-control-edit" value="<?php safeEcho($employee['bank_name']); ?>">
                                     </div>
                                     <div class="form-group">
                                         <label>Account Number</label>
-                                        <input type="text" name="bank_account" class="form-control-edit"
-                                            value="<?php safeEcho($employee['bank_account']); ?>">
+                                        <input type="text" name="bank_account" class="form-control-edit" value="<?php safeEcho($employee['bank_account']); ?>">
                                     </div>
                                     <div class="form-group">
                                         <label>Credit Status</label>
-                                        <select name="credit_status" class="form-control-edit"
-                                            onchange="toggleCreditFile(this)">
+                                        <select name="credit_status" class="form-control-edit" onchange="toggleCreditFile(this)">
                                             <option value="good" <?php echo ($employee['credit_status'] ?? 'good') == 'good' ? 'selected' : ''; ?>>Good / No Debt</option>
                                             <option value="active" <?php echo ($employee['credit_status'] ?? '') == 'active' ? 'selected' : ''; ?>>Active Credit</option>
                                             <option value="bad" <?php echo ($employee['credit_status'] ?? '') == 'bad' ? 'selected' : ''; ?>>Bad / Default</option>
                                         </select>
                                     </div>
-                                    <div id="creditFileGroup" class="form-group"
-                                        style="<?php echo ($employee['credit_status'] ?? '') == 'active' ? '' : 'display: none;'; ?> grid-column: 1/-1;">
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                                            <div>
-                                                <label>Credit Status File(s) (Attached)</label>
-                                                <div style="display: flex; flex-direction: column; gap: 10px;">
-                                                    <div style="display: flex; flex-wrap: wrap; gap: 5px;">
-                                                        <?php displayFiles($employee['loan_file'] ?? '', 'fa-file-pdf'); ?>
-                                                    </div>
-                                                    <input type="file" name="loan_file[]" multiple accept=".pdf,image/*"
-                                                        class="form-control-edit" style="padding: 9px;"
-                                                        onchange="handleFileList(this, 'loan_edit_list')">
-                                                    <div id="loan_edit_list"
-                                                        style="font-size: 0.8rem; color: var(--secondary);"></div>
+                                    <div id="creditFileGroup" class="form-group" style="<?php echo ($employee['credit_status'] ?? '') == 'active' ? '' : 'display: none;'; ?> grid-column: 1/-1;">
+                                        <div style="background: #fffcf5; padding: 20px; border-radius: 12px; border: 1px solid #fef3c7;">
+                                            <div style="font-weight:700; color:#92400e; margin-bottom:15px;"><i class="fas fa-info-circle"></i> Active Loan Details</div>
+                                            <div class="form-grid" style="margin-bottom: 20px;">
+                                                <div class="form-group">
+                                                    <label>Lender</label>
+                                                    <input type="text" name="loan_lender" class="form-control-edit" value="<?php safeEcho($employee['loan_lender'] ?? ''); ?>">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Loan Type</label>
+                                                    <input type="text" name="loan_type" class="form-control-edit" value="<?php safeEcho($employee['loan_type'] ?? ''); ?>">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Total Amount (ETB)</label>
+                                                    <input type="number" name="loan_amount" class="form-control-edit" value="<?php safeEcho($employee['loan_amount'] ?? '0'); ?>">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Remaining (ETB)</label>
+                                                    <input type="number" name="remaining_balance" class="form-control-edit" value="<?php safeEcho($employee['remaining_balance'] ?? '0'); ?>">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Monthly Pay (ETB)</label>
+                                                    <input type="number" name="monthly_payment" class="form-control-edit" value="<?php safeEcho($employee['monthly_payment'] ?? '0'); ?>">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>End Date</label>
+                                                    <input type="date" name="loan_end_date" class="form-control-edit" value="<?php safeEcho($employee['loan_end_date'] ?? ''); ?>">
                                                 </div>
                                             </div>
-                                            <div>
-                                                <label>Credit Information / Details</label>
-                                                <textarea name="credit_details" class="form-control-edit"
-                                                    placeholder="Enter details about the active credit..."
-                                                    style="height: 70px;"><?php safeEcho($employee['credit_details'] ?? ''); ?></textarea>
+                                            
+                                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                                                <div class="form-group">
+                                                    <label>Credit Information / Details</label>
+                                                    <textarea name="credit_details" class="form-control-edit" style="height: 100px;"><?php safeEcho($employee['credit_details'] ?? ''); ?></textarea>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Credit Status File(s) (Attached)</label>
+                                                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                                                        <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                                                            <?php displayFiles($employee['loan_file'] ?? '', 'fa-file-pdf'); ?>
+                                                        </div>
+                                                        <div class="upload-area" onclick="document.getElementById('loan_edit_input').click()" style="padding:15px;">
+                                                            <i class="fas fa-file-invoice-dollar"></i> Select File(s)
+                                                            <input type="file" id="loan_edit_input" name="loan_file[]" multiple accept=".pdf,image/*" style="display:none" onchange="handleFileList(this, 'loan_edit_list')">
+                                                        </div>
+                                                        <div id="loan_edit_list" style="font-size: 0.8rem; color: var(--secondary);"></div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -647,98 +837,176 @@ function displayFiles($jsonStr, $icon = 'fa-file')
                                 <div class="form-grid">
                                     <div class="form-group" style="grid-column: 1 / -1;">
                                         <label>Warranty / Guarantor Required?</label>
-                                        <select name="warranty_status" class="form-control-edit"
-                                            onchange="toggleWarrantyFields(this)">
-                                            <option value="yes" <?php echo ($employee['warranty_status'] ?? 'yes') == 'yes' ? 'selected' : ''; ?>>Yes - Guarantor Required</option>
-                                            <option value="no" <?php echo ($employee['warranty_status'] ?? 'yes') == 'no' ? 'selected' : ''; ?>>No - Not Required</option>
+                                        <select name="warranty_status" class="form-control-edit" onchange="toggleWarrantyFields(this)">
+                                            <option value="no" <?php echo ($employee['warranty_status'] ?? 'no') == 'no' ? 'selected' : ''; ?>>No - Not Required</option>
+                                            <option value="yes" <?php echo ($employee['warranty_status'] ?? 'no') == 'yes' ? 'selected' : ''; ?>>Yes - Guarantor Required</option>
                                         </select>
                                     </div>
 
-                                    <div id="warrantyFields" class="form-grid"
-                                        style="grid-column: 1 / -1; display: <?php echo ($employee['warranty_status'] ?? 'yes') == 'yes' ? 'grid' : 'none'; ?>; margin-bottom: 0;">
-                                        <div class="form-group">
-                                            <label>Guarantor Name</label>
-                                            <input type="text" name="person_name" class="form-control-edit"
-                                                value="<?php safeEcho($employee['person_name']); ?>">
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Guarantor Phone</label>
-                                            <input type="tel" name="phone" class="form-control-edit"
-                                                value="<?php safeEcho($employee['phone']); ?>">
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Guarantor Woreda</label>
-                                            <input type="text" name="warranty_woreda" class="form-control-edit"
-                                                value="<?php safeEcho($employee['warranty_woreda'] ?? ''); ?>">
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Guarantor Kebele</label>
-                                            <input type="text" name="warranty_kebele" class="form-control-edit"
-                                                value="<?php safeEcho($employee['warranty_kebele'] ?? ''); ?>">
-                                        </div>
-
-                                        <div class="form-group">
-                                            <label>Warranty Agreement Document(s)</label>
-                                            <div style="display: flex; flex-direction: column; gap: 10px;">
-                                                <div style="display: flex; flex-wrap: wrap; gap: 5px;">
-                                                    <?php displayFiles($employee['scan_file'] ?? '', 'fa-file-contract'); ?>
+                                    <div id="warrantyFields" class="form-grid" style="grid-column: 1 / -1; display: <?php echo ($employee['warranty_status'] ?? 'no') == 'yes' ? 'grid' : 'none'; ?>; margin-bottom: 0;">
+                                        <div style="grid-column: 1/-1; background: #f0fdfa; padding: 20px; border-radius: 12px; border: 1px solid #ccfbf1;">
+                                            <div style="font-weight:700; color:#0f766e; margin-bottom:15px;"><i class="fas fa-user-shield"></i> Guarantor Information</div>
+                                            <div class="form-grid">
+                                                <div class="form-group">
+                                                    <label>Guarantor Name</label>
+                                                    <input type="text" name="person_name" class="form-control-edit" value="<?php safeEcho($employee['person_name']); ?>">
                                                 </div>
-                                                <input type="file" name="scan_file[]" multiple class="form-control-edit"
-                                                    style="padding: 9px;"
-                                                    onchange="handleFileList(this, 'warranty_edit_list')">
-                                                <div id="warranty_edit_list"
-                                                    style="font-size: 0.8rem; color: var(--secondary);"></div>
+                                                <div class="form-group">
+                                                    <label>Guarantor Phone</label>
+                                                    <input type="tel" name="phone" class="form-control-edit" value="<?php safeEcho($employee['phone']); ?>">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Guarantor Woreda</label>
+                                                    <input type="text" name="warranty_woreda" class="form-control-edit" value="<?php safeEcho($employee['warranty_woreda'] ?? ''); ?>">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Guarantor Kebele</label>
+                                                    <input type="text" name="warranty_kebele" class="form-control-edit" value="<?php safeEcho($employee['warranty_kebele'] ?? ''); ?>">
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Additional ID Details</label>
-                                            <input type="text" name="national_id_details" class="form-control-edit"
-                                                value="<?php safeEcho($employee['national_id_details'] ?? ''); ?>">
+
+                                            <div style="font-weight:700; color:#0f766e; margin: 20px 0 15px;"><i class="fas fa-id-card"></i> Additional ID Details</div>
+                                            <div class="form-grid">
+                                                <div class="form-group">
+                                                    <label>Relationship</label>
+                                                    <input type="text" name="person_relationship" class="form-control-edit" value="<?php safeEcho($employee['person_relationship'] ?? ''); ?>">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>National ID (FIN)</label>
+                                                    <input type="text" name="fin_id" class="form-control-edit" value="<?php safeEcho($employee['fin_id'] ?? ''); ?>">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Court Status</label>
+                                                    <select name="warranty_court_status" class="form-control-edit">
+                                                        <option value="clean" <?php echo ($employee['warranty_court_status'] ?? 'clean') == 'clean' ? 'selected' : ''; ?>>CLEAN</option>
+                                                        <option value="has_record" <?php echo ($employee['warranty_court_status'] ?? '') == 'has_record' ? 'selected' : ''; ?>>HAS RECORD</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Additional ID Notes</label>
+                                                    <input type="text" name="national_id_details" class="form-control-edit" value="<?php safeEcho($employee['national_id_details'] ?? ''); ?>">
+                                                </div>
+                                            </div>
+
+                                            <div style="font-weight:700; color:#0f766e; margin: 20px 0 15px;"><i class="fas fa-file-contract"></i> Warranty Terms</div>
+                                            <div class="form-grid">
+                                                <div class="form-group">
+                                                    <label>Type</label>
+                                                    <input type="text" name="warranty_type" class="form-control-edit" value="<?php safeEcho($employee['warranty_type'] ?? ''); ?>">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Amount / Value (ETB)</label>
+                                                    <input type="number" name="warranty_amount" class="form-control-edit" value="<?php safeEcho($employee['warranty_amount'] ?? '0'); ?>">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Start Date</label>
+                                                    <input type="date" name="warranty_start_date" class="form-control-edit" value="<?php safeEcho($employee['warranty_start_date'] ?? ''); ?>">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Expiry Date</label>
+                                                    <input type="date" name="warranty_end_date" class="form-control-edit" value="<?php safeEcho($employee['warranty_end_date'] ?? ''); ?>">
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group" style="margin-top:20px;">
+                                                <label>Warranty Agreement Document(s)</label>
+                                                <div style="display: flex; flex-direction: column; gap: 10px;">
+                                                    <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                                                        <?php displayFiles($employee['scan_file'] ?? '', 'fa-file-contract'); ?>
+                                                    </div>
+                                                    <div class="upload-area" onclick="document.getElementById('warranty_edit_file').click()" style="padding: 15px; border-style: dashed; background: white;">
+                                                        <i class="fas fa-paperclip" style="font-size: 1.5rem; margin-bottom: 10px; color: #0891b2;"></i>
+                                                        <div style="font-size: 0.9rem;">Upload Agreement Documents</div>
+                                                        <input type="file" id="warranty_edit_file" name="scan_file[]" multiple style="display:none" onchange="handleFileList(this, 'warranty_edit_list')">
+                                                    </div>
+                                                    <div id="warranty_edit_list" style="font-size: 0.8rem; color: var(--secondary);"></div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div class="form-group" style="grid-column: 1 / -1; margin-top: 20px;">
-                                        <div
-                                            style="font-weight: 600; color: var(--primary); margin-bottom: 15px; border-top: 1px solid #f1f5f9; padding-top: 15px;">
-                                            Legal & Criminal Status</div>
+                                    <div class="form-group" style="grid-column: 1 / -1; margin-top: 20px; border-top: 1px solid #f1f5f9; padding-top: 20px;">
+                                        <div style="font-weight: 700; color: var(--primary); margin-bottom: 15px;"><i class="fas fa-gavel"></i> Legal & Criminal Status</div>
                                     </div>
 
                                     <div class="form-group">
                                         <label>Criminal Status</label>
-                                        <select name="criminal_status" class="form-control-edit"
-                                            onchange="toggleCriminalFile(this)">
+                                        <select name="criminal_status" class="form-control-edit" onchange="toggleCriminalFile(this)">
                                             <option value="no" <?php echo ($employee['criminal_status'] ?? 'no') == 'no' ? 'selected' : ''; ?>>Clean</option>
                                             <option value="yes" <?php echo ($employee['criminal_status'] ?? 'no') == 'yes' ? 'selected' : ''; ?>>Has Record</option>
                                         </select>
                                     </div>
 
-                                    <div id="criminalFileGroup" class="form-group"
-                                        style="<?php echo ($employee['criminal_status'] ?? 'no') == 'yes' ? '' : 'display: none;'; ?> grid-column: 1/-1;">
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                                            <div>
-                                                <label>Criminal Record File(s) (Photo/Scan)</label>
+                                    <div id="criminalFileGroup" class="form-group" style="<?php echo ($employee['criminal_status'] ?? 'no') == 'yes' ? '' : 'display: none;'; ?> grid-column: 1/-1;">
+                                        <div style="background: #fef2f2; padding: 20px; border-radius: 12px; border: 1px solid #fee2e2;">
+                                            <div style="font-weight:700; color:#b91c1c; margin-bottom:15px;"><i class="fas fa-balance-scale"></i> Case Information</div>
+                                            <div class="form-grid">
+                                                <div class="form-group">
+                                                    <label>Type</label>
+                                                    <input type="text" name="criminal_type" class="form-control-edit" value="<?php safeEcho($employee['criminal_type'] ?? ''); ?>">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Date</label>
+                                                    <input type="date" name="criminal_date" class="form-control-edit" value="<?php safeEcho($employee['criminal_date'] ?? ''); ?>">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Court</label>
+                                                    <input type="text" name="criminal_court" class="form-control-edit" value="<?php safeEcho($employee['criminal_court'] ?? ''); ?>">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Sentence</label>
+                                                    <input type="text" name="criminal_sentence" class="form-control-edit" value="<?php safeEcho($employee['criminal_sentence'] ?? ''); ?>">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Case Status</label>
+                                                    <select name="criminal_status_current" class="form-control-edit">
+                                                        <option value="">Select Status</option>
+                                                        <option value="Open" <?php echo ($employee['criminal_status_current'] ?? '') == 'Open' ? 'selected' : ''; ?>>Open</option>
+                                                        <option value="Ongoing" <?php echo ($employee['criminal_status_current'] ?? '') == 'Ongoing' ? 'selected' : ''; ?>>Ongoing</option>
+                                                        <option value="Closed" <?php echo ($employee['criminal_status_current'] ?? '') == 'Closed' ? 'selected' : ''; ?>>Closed</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Notes</label>
+                                                    <textarea name="criminal_record_details" class="form-control-edit" style="height: 38px;"><?php safeEcho($employee['criminal_record_details'] ?? ''); ?></textarea>
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group" style="margin-top:20px;">
+                                                <label>Case File(s) (Photo/Scan)</label>
                                                 <div style="display: flex; flex-direction: column; gap: 10px;">
                                                     <div style="display: flex; flex-wrap: wrap; gap: 5px;">
                                                         <?php displayFiles($employee['criminal_file'] ?? '', 'fa-balance-scale'); ?>
                                                     </div>
-                                                    <input type="file" name="criminal_file[]" multiple
-                                                        accept=".pdf,image/*" class="form-control-edit"
-                                                        style="padding: 9px;"
-                                                        onchange="handleFileList(this, 'criminal_edit_list')">
-                                                    <div id="criminal_edit_list"
-                                                        style="font-size: 0.8rem; color: var(--secondary);"></div>
+                                                    <div class="upload-area" onclick="document.getElementById('criminal_edit_file_input').click()" style="padding: 15px; border-style: dashed; background: white;">
+                                                        <i class="fas fa-file-alt" style="font-size: 1.5rem; margin-bottom: 10px; color: #dc2626;"></i>
+                                                        <div style="font-size: 0.9rem;">Upload Case Documents</div>
+                                                        <input type="file" id="criminal_edit_file_input" name="criminal_file[]" multiple accept=".pdf,image/*" style="display:none" onchange="handleFileList(this, 'criminal_edit_list')">
+                                                    </div>
+                                                    <div id="criminal_edit_list" style="font-size: 0.8rem; color: var(--secondary);"></div>
                                                 </div>
-                                            </div>
-                                            <div>
-                                                <label>Criminal Record Details</label>
-                                                <textarea name="criminal_record_details" class="form-control-edit"
-                                                    placeholder="Enter details about the record..."
-                                                    style="height: 70px;"><?php safeEcho($employee['criminal_record_details'] ?? ''); ?></textarea>
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
 
-
+                            <!-- Additional Documents -->
+                            <div id="documents">
+                                <div class="section-title"><i class="fas fa-folder-open"></i> Additional Documents</div>
+                                <div class="form-group">
+                                    <label>Upload IDs, Certificates, etc.</label>
+                                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                                        <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                                            <?php displayFiles($employee['documents'] ?? '', 'fa-folder-open'); ?>
+                                        </div>
+                                        <div class="upload-area" onclick="document.getElementById('multi_docs_edit').click()">
+                                            <i class="fas fa-copy"></i> Select Multiple Files
+                                            <input type="file" id="multi_docs_edit" name="documents[]" multiple style="display:none" onchange="handleFileList(this, 'doc_edit_list')">
+                                        </div>
+                                        <div id="doc_edit_list" style="font-size: 0.8rem; color: var(--secondary);"></div>
+                                    </div>
+                                    <small style="margin-top:5px; display:block; color:var(--gray)">Supported: PDF, JPG, PNG</small>
                                 </div>
                             </div>
 
@@ -789,12 +1057,42 @@ function displayFiles($jsonStr, $icon = 'fa-file')
                     }
 
                     function scrollToSection(id) {
-                        document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        const target = document.getElementById(id);
+                        if (target) {
+                            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
                         // Update active nav
                         document.querySelectorAll('.nav-item').forEach(item => {
                             item.classList.remove('active');
-                            if (item.getAttribute('onclick').includes(id)) item.classList.add('active');
+                            if (item.getAttribute('onclick')?.includes(id)) item.classList.add('active');
                         });
+                    }
+
+                    function checkOtherCitizenship(select) {
+                        const field = document.getElementById('otherCitizenship');
+                        if (select.value === 'Other') {
+                            field.classList.add('show');
+                        } else {
+                            field.classList.remove('show');
+                        }
+                    }
+
+                    function checkOtherLanguage(select) {
+                        const field = document.getElementById('otherLanguage');
+                        if (select.value === 'other') {
+                            field.classList.add('show');
+                        } else {
+                            field.classList.remove('show');
+                        }
+                    }
+
+                    function checkOtherReligion(select) {
+                        const field = document.getElementById('otherReligion');
+                        if (select.value === 'other') {
+                            field.classList.add('show');
+                        } else {
+                            field.classList.remove('show');
+                        }
                     }
 
                     function previewProfile(input) {
@@ -855,14 +1153,24 @@ function displayFiles($jsonStr, $icon = 'fa-file')
                     function handleFileList(input, listId) {
                         const list = document.getElementById(listId);
                         list.innerHTML = '';
-                        if (input.files) {
+                        if (input.files && input.files.length > 0) {
+                            const clearBtn = document.createElement('div');
+                            clearBtn.innerHTML = `<button type="button" class="btn-clear-files" onclick="clearFileInput('${input.id}', '${listId}')"><i class="fas fa-times-circle"></i> Clear Selection</button>`;
+                            list.appendChild(clearBtn);
+
                             Array.from(input.files).forEach(file => {
                                 const div = document.createElement('div');
+                                div.className = 'file-item-preview';
                                 div.innerHTML = `<i class="fas fa-file-alt"></i> ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
-                                div.style.marginBottom = '5px';
                                 list.appendChild(div);
                             });
                         }
+                    }
+
+                    function clearFileInput(inputId, listId) {
+                        const input = document.getElementById(inputId);
+                        input.value = '';
+                        document.getElementById(listId).innerHTML = '';
                     }
 
                     // Pre-populate locations

@@ -34,12 +34,12 @@ $diff = $current_date->diff($join_date);
 $years_of_service = $diff->y;
 $months_of_service = ($years_of_service * 12) + $diff->m;
 
-// Base Entitlement Function
+// Base Entitlement Function (Ethiopian Labor Proclamation 1156/2019)
 function calculateLegalBase($years)
 {
-    if ($years < 1)
-        return 0;
-    return 16 + floor($years / 2);
+    if ($years < 1) return 0;
+    // 16 days for first year + 1 day for every 2 additional years
+    return 16 + floor(($years - 1) / 2);
 }
 
 // Get or create leave entitlement
@@ -69,9 +69,11 @@ if ($res->num_rows === 0) {
     $mat = ($employee['gender'] === 'female') ? 120 : 0;
     $pat = ($employee['gender'] === 'male') ? 3 : 0;
     $emg = 3;
+    $mar = 3;
+    $ber = 3;
 
-    $ins = $conn->prepare("INSERT INTO leave_entitlements (employee_id, year, annual_leave_days, carry_forward_days, sick_leave_days, maternity_leave_days, paternity_leave_days, emergency_leave_days) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-    $ins->bind_param("siiiiiii", $employee_id, $current_year, $base, $carry_forward, $sick, $mat, $pat, $emg);
+    $ins = $conn->prepare("INSERT INTO leave_entitlements (employee_id, year, annual_leave_days, carry_forward_days, sick_leave_days, maternity_leave_days, paternity_leave_days, emergency_leave_days, marriage_leave_days, bereavement_leave_days) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $ins->bind_param("siiiiiiiii", $employee_id, $current_year, $base, $carry_forward, $sick, $mat, $pat, $emg, $mar, $ber);
     $ins->execute();
     $ins->close();
 
@@ -83,12 +85,16 @@ $leave = $res->fetch_assoc();
 $entitlement_stmt->close();
 
 // Dynamic Tenure adjustment for UI logic (if not manually overridden)
-$bonus = ($years_of_service >= 1) ? floor($years_of_service / 2) : 0;
+$bonus = ($years_of_service >= 1) ? floor(($years_of_service - 1) / 2) : 0;
 $annual_total = $leave['annual_leave_days'];
 
-// If record is at default 16, apply tenure bonus
-if ($annual_total == 16 && $years_of_service >= 1) {
-    $annual_total = 16 + $bonus;
+// If record is at default 16 or was 16+old_bonus, ensure it matches legal base
+if ($years_of_service >= 1) {
+    $legal_base = 16 + $bonus;
+    // We update UI display if the DB version is the standard 16 (initial)
+    if ($annual_total == 16 || $annual_total < $legal_base) {
+        $annual_total = $legal_base;
+    }
 }
 
 // Lock for probation
@@ -100,7 +106,7 @@ if ($years_of_service < 1) {
 $grand_total_annual = $annual_total + $leave['carry_forward_days'];
 
 // Get pending
-$pending = ['annual' => 0, 'sick' => 0, 'maternity' => 0, 'paternity' => 0, 'emergency' => 0];
+$pending = ['annual' => 0, 'sick' => 0, 'maternity' => 0, 'paternity' => 0, 'emergency' => 0, 'marriage' => 0, 'bereavement' => 0];
 $p_stmt = $conn->prepare("SELECT leave_type, SUM(days_requested) as pd FROM leave_requests WHERE employee_id = ? AND status = 'pending' GROUP BY leave_type");
 $p_stmt->bind_param("s", $employee_id);
 $p_stmt->execute();
@@ -151,6 +157,18 @@ $response = [
             'used' => $leave['used_emergency_leave'],
             'remaining' => $leave['emergency_leave_days'] - $leave['used_emergency_leave'],
             'pending' => $pending['emergency']
+        ],
+        'marriage' => [
+            'entitled' => $leave['marriage_leave_days'],
+            'used' => $leave['used_marriage_leave'],
+            'remaining' => $leave['marriage_leave_days'] - $leave['used_marriage_leave'],
+            'pending' => $pending['marriage']
+        ],
+        'bereavement' => [
+            'entitled' => $leave['bereavement_leave_days'],
+            'used' => $leave['used_bereavement_leave'],
+            'remaining' => $leave['bereavement_leave_days'] - $leave['used_bereavement_leave'],
+            'pending' => $pending['bereavement']
         ]
     ]
 ];

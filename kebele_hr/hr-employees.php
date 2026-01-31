@@ -737,7 +737,7 @@ session_start();
                     ? `<span style="background:#fef2f2; color:#ef4444; padding:4px 10px; border-radius:20px; font-weight:700; font-size:0.75rem;"><i class="fas fa-exclamation-circle"></i> HAS RECORD</span>`
                     : `<span style="background:#f0fdf4; color:#16a34a; padding:4px 10px; border-radius:20px; font-weight:700; font-size:0.75rem;"><i class="fas fa-check-circle"></i> CLEAN</span>`;
 
-                const loanBadge = data.loan_status === 'yes'
+                const loanBadge = data.credit_status === 'active'
                     ? `<span style="background:#fff7ed; color:#ea580c; padding:4px 10px; border-radius:20px; font-weight:700; font-size:0.75rem;"><i class="fas fa-hand-holding-usd"></i> ACTIVE LOAN</span>`
                     : `<span style="background:#f0fdf4; color:#16a34a; padding:4px 10px; border-radius:20px; font-weight:700; font-size:0.75rem;"><i class="fas fa-check-circle"></i> DEBT FREE</span>`;
 
@@ -812,7 +812,7 @@ session_start();
                             <div><div class="info-label">Credit Status</div><div class="info-value">${(data.credit_status || 'Good').toUpperCase()}</div></div>
                             <div><div class="info-label">Debt Profile</div><div class="info-value">${loanBadge}</div></div>
                         </div>
-                        ${data.loan_status === 'yes' ? `
+                        ${(data.credit_status === 'active' || data.loan_status === 'yes') ? `
                             <div style="background:#fffcf5; border:1px solid #fef3c7; border-radius:12px; padding:15px; margin-bottom:15px;">
                                 <div class="info-label" style="color:#92400e; margin-bottom:10px;"><i class="fas fa-info-circle"></i> Active Loan Details</div>
                                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
@@ -835,6 +835,8 @@ session_start();
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:15px;">
                             <div style="grid-column:span 2;"><div class="info-label">Guarantor Name</div><div class="info-value" style="font-weight:700;">${data.person_name || 'N/A'}</div></div>
                             <div><div class="info-label">Guarantor Phone</div><div class="info-value">${data.phone || 'N/A'}</div></div>
+                            <div><div class="info-label">Guarantor Woreda</div><div class="info-value">${data.warranty_woreda || 'N/A'}</div></div>
+                            <div><div class="info-label">Guarantor Kebele</div><div class="info-value">${data.warranty_kebele || 'N/A'}</div></div>
                             <div><div class="info-label">Relationship</div><div class="info-value">${data.person_relationship || 'N/A'}</div></div>
                             <div><div class="info-label">National ID (FIN)</div><div class="info-value">${data.fin_id || 'N/A'}</div></div>
                             <div><div class="info-label">Court Status</div><div class="info-value">${criminalBadge}</div></div>

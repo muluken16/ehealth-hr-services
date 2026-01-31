@@ -154,18 +154,28 @@ session_start();
         /* Modern Leave Cards */
         .leave-requests {
             display: grid;
-            gap: 20px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+        }
+
+        @media (max-width: 1024px) {
+            .leave-requests {
+                grid-template-columns: 1fr;
+            }
         }
 
         .leave-request-card {
             background: white;
-            border-radius: 18px;
-            padding: 28px;
+            border-radius: 20px;
+            padding: 30px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             position: relative;
             overflow: hidden;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             border: 1px solid #f0f4f8;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
         .leave-request-card::before {
@@ -285,10 +295,10 @@ session_start();
 
         .leave-details-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 16px;
-            margin-bottom: 20px;
-            padding: 20px;
+            margin-bottom: 25px;
+            padding: 24px;
             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
             border-radius: 12px;
         }
@@ -341,18 +351,19 @@ session_start();
 
         .leave-actions {
             display: flex;
-            gap: 10px;
-            padding-top: 20px;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding-top: 15px;
             border-top: 2px solid #f0f4f8;
         }
 
         .leave-action-btn {
             flex: 1;
-            padding: 12px 20px;
+            padding: 12px 18px;
             border: none;
             border-radius: 10px;
             font-weight: 700;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: inline-flex;
@@ -656,7 +667,10 @@ session_start();
                             <option value="sick">Sick Leave</option>
                             <option value="maternity">Maternity Leave</option>
                             <option value="paternity">Paternity Leave</option>
+                            <option value="marriage">Marriage Leave</option>
                             <option value="bereavement">Bereavement Leave</option>
+                            <option value="emergency">Emergency Leave</option>
+                            <option value="special">Special (Unpaid) Leave</option>
                         </select>
                     </div>
                     <div class="filter-group">
@@ -785,7 +799,10 @@ session_start();
                                 <option value="sick">Sick Leave</option>
                                 <option value="maternity">Maternity Leave</option>
                                 <option value="paternity">Paternity Leave</option>
+                                <option value="marriage">Marriage Leave</option>
                                 <option value="bereavement">Bereavement Leave</option>
+                                <option value="emergency">Emergency Leave</option>
+                                <option value="special">Special (Unpaid) Leave</option>
                             </select>
                         </div>
                         <div style="display: flex; flex-direction: column;">
@@ -804,7 +821,7 @@ session_start();
                         </div>
                         <div style="display: flex; flex-direction: column;">
                             <label style="margin-bottom: 8px; font-weight:600;">End Date:</label>
-                            <input type="date" name="end_date" required
+                            <input type="date" name="end_date" required min="${new Date().toISOString().split('T')[0]}"
                                 style="width: 100%; border: 2px solid #e2e8f0; padding: 12px; border-radius: 10px;">
                         </div>
                     </div>
@@ -814,6 +831,21 @@ session_start();
                         <textarea name="reason" required
                             style="width: 100%; border: 2px solid #e2e8f0; padding: 12px; border-radius: 10px; min-height: 100px;"
                             placeholder="Enter reason for leave..."></textarea>
+                    </div>
+                </div>
+
+                <div id="hrDaysBreakdown" style="display: none; background: #fdf2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 15px; margin-top: 5px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; color: #b91c1c; font-weight: 500;">
+                        <span>Calendar Days:</span>
+                        <span id="hrTotalCalendar">0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; color: #b91c1c; font-weight: 500; margin-top: 4px;">
+                        <span>Sundays/Holidays:</span>
+                        <span id="hrExcludedDays">0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 15px; color: #1e40af; font-weight: 800; margin-top: 10px; border-top: 1px dashed #fca5a5; padding-top: 8px;">
+                        <span>Net Leave Days:</span>
+                        <span id="hrNetWorking">0</span>
                     </div>
                 </div>
 
@@ -832,6 +864,78 @@ session_start();
 
     <script>
         let allLeaveRequests = [];
+        let currentlySelectedEmployeeBalances = null;
+        const ET_HOLIDAYS = [
+            '2026-01-07', // Genna
+            '2026-01-19', // Timkat
+            '2026-03-02', // Adwa
+            '2026-05-01', // Labor Day
+            '2026-05-05', // Patriots Day
+            '2026-09-11', // New Year
+            '2026-09-27', // Meskel
+            '2026- April-10', // Siklet Placeholder
+            '2026- April-12'  // Fasika Placeholder
+        ];
+
+        function calculateEthiopianWorkingDays(start, end) {
+            let count = 0;
+            let excluded = 0;
+            let cur = new Date(start);
+            const stop = new Date(end);
+            
+            while (cur <= stop) {
+                const day = cur.getDay(); // 0 = Sunday
+                const str = cur.toISOString().split('T')[0];
+                if (day === 0 || ET_HOLIDAYS.includes(str)) {
+                    excluded++;
+                } else {
+                    count++;
+                }
+                cur.setDate(cur.getDate() + 1);
+            }
+            return { net: count, excluded: excluded, total: count + excluded };
+        }
+
+        // Auto-update HR modal days
+        const hrStartInput = document.querySelector('#hrLeaveRequestForm input[name="start_date"]');
+        const hrEndInput = document.querySelector('#hrLeaveRequestForm input[name="end_date"]');
+        const hrDaysInput = document.querySelector('#hrLeaveRequestForm input[name="days_requested"]');
+
+        hrStartInput.onchange = hrEndInput.onchange = document.querySelector('#hrLeaveRequestForm select[name="leave_type"]').onchange = function() {
+            if (hrStartInput.value && hrEndInput.value) {
+                const results = calculateEthiopianWorkingDays(hrStartInput.value, hrEndInput.value);
+                const resultsArea = document.getElementById('hrDaysBreakdown');
+                resultsArea.style.display = 'block';
+                document.getElementById('hrTotalCalendar').textContent = results.total;
+                document.getElementById('hrExcludedDays').textContent = results.excluded;
+                document.getElementById('hrNetWorking').textContent = results.net;
+                hrDaysInput.value = results.net;
+
+                // Balance Validation Logic
+                const type = document.querySelector('#hrLeaveRequestForm select[name="leave_type"]').value;
+                const submitBtn = document.getElementById('hrSubmitBtn');
+                
+                if (currentlySelectedEmployeeBalances && type) {
+                    const balance = currentlySelectedEmployeeBalances[type]?.remaining || 0;
+                    if (results.net > balance) {
+                        submitBtn.disabled = true;
+                        submitBtn.style.opacity = '0.5';
+                        submitBtn.style.cursor = 'not-allowed';
+                        resultsArea.style.background = '#fef2f2';
+                        resultsArea.style.borderColor = '#ef4444';
+                        document.getElementById('hrNetWorking').parentElement.style.color = '#ef4444';
+                        document.getElementById('hrNetWorking').innerHTML = `${results.net} (INSIDIENT BALANCE - Available: ${balance})`;
+                    } else {
+                        submitBtn.disabled = false;
+                        submitBtn.style.opacity = '1';
+                        submitBtn.style.cursor = 'pointer';
+                        resultsArea.style.background = '#fdf2f2';
+                        resultsArea.style.borderColor = '#fecaca';
+                        document.getElementById('hrNetWorking').parentElement.style.color = '#1e40af';
+                    }
+                }
+            }
+        };
 
         function formatDate(dateString) {
             const date = new Date(dateString);
@@ -913,8 +1017,12 @@ session_start();
                                 </div>
                             </div>
                         </div>
-                        <div class="leave-type-badge ${leaveType}">
-                            ${ucfirst(leaveType)} Leave
+                            <div class="leave-type-badge ${leaveType}">
+                                ${ucfirst(leaveType)} Leave
+                            </div>
+                            <div style="font-size: 11px; font-weight: 800; color: ${request.remaining_balance < request.days_requested ? '#ef4444' : '#10b981'}; background: ${request.remaining_balance < request.days_requested ? '#fee2e2' : '#d1fae5'}; padding: 4px 10px; border-radius: 6px; margin-top: 8px; border: 1px solid ${request.remaining_balance < request.days_requested ? '#fecaca' : '#a7f3d0'}; text-align: center;">
+                                BALANCE: ${request.remaining_balance} DAYS
+                            </div>
                         </div>
                     </div>
                     
@@ -946,7 +1054,10 @@ session_start();
                         <button class="leave-action-btn view" onclick="viewLeaveDetails(${request.id})">
                             <i class="fas fa-eye"></i> View Details
                         </button>
-                        <button class="leave-action-btn approve" onclick="approveLeave(${request.id}, '${(request.first_name || '') + ' ' + (request.last_name || '')}')">
+                        <button class="leave-action-btn approve" 
+                            onclick="approveLeave(${request.id}, '${(request.first_name || '') + ' ' + (request.last_name || '')}')"
+                            ${request.remaining_balance < request.days_requested ? 'disabled title="Insufficient Balance"' : ''}
+                            style="${request.remaining_balance < request.days_requested ? 'opacity: 0.5; cursor: not-allowed; filter: grayscale(1);' : ''}">
                             <i class="fas fa-check"></i> Approve
                         </button>
                         <button class="leave-action-btn reject" onclick="rejectLeave(${request.id}, '${(request.first_name || '') + ' ' + (request.last_name || '')}')">
@@ -1010,12 +1121,12 @@ session_start();
                             <span style="font-weight: 700; color: #667eea;">${ucfirst(request.leave_type)} Leave</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 2px solid rgba(0,0,0,0.05);">
-                            <span style="font-weight: 600; color: #6c757d;">Duration</span>
-                            <span style="font-weight: 700; color: #2c3e50;">${formatDate(request.start_date)} to ${formatDate(request.end_date)}</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 2px solid rgba(0,0,0,0.05);">
-                            <span style="font-weight: 600; color: #6c757d;">Total Days</span>
+                            <span style="font-weight: 600; color: #6c757d;">Total Days Requested</span>
                             <span style="font-weight: 700; color: #667eea; font-size: 18px;">${request.days_requested} Days</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 2px solid rgba(0,0,0,0.05); background: ${request.remaining_balance < request.days_requested ? '#fef2f2' : '#f0fdf4'}; border-radius: 8px; padding: 10px;">
+                            <span style="font-weight: 600; color: #6c757d;">Current Balance</span>
+                            <span style="font-weight: 800; color: ${request.remaining_balance < request.days_requested ? '#dc2626' : '#16a34a'};">${request.remaining_balance} Days Available</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; padding: 12px 0;">
                             <span style="font-weight: 600; color: #6c757d;">Phone Number</span>
@@ -1053,12 +1164,15 @@ session_start();
         }
 
         function approveLeave(leaveId, employeeName) {
-            if (!confirm('✅ Approve leave request for ' + employeeName + '?')) {
-                return;
-            }
-
+            if (!confirm('✅ Approve leave request for ' + employeeName + '?')) return;
+            
             const card = document.getElementById('leave-card-' + leaveId);
-            if (!card) return;
+            const btn = card?.querySelector('.leave-action-btn.approve');
+            const originalBtnHtml = btn ? btn.innerHTML : '';
+            if(btn) {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                btn.disabled = true;
+            }
 
             fetch('approve_leave.php', {
                 method: 'POST',
@@ -1068,9 +1182,9 @@ session_start();
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        card.style.transition = 'all 0.4s ease';
+                        card.style.transition = 'all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
                         card.style.opacity = '0';
-                        card.style.transform = 'translateX(100px)';
+                        card.style.transform = 'scale(0.8) translateY(-50px)';
 
                         setTimeout(() => {
                             card.remove();
@@ -1086,15 +1200,22 @@ session_start();
                                 showSuccessModal(data.employee);
                             }
 
-                            // Increment Approved Today counter
                             const approvedCount = document.getElementById('approvedCount');
                             approvedCount.textContent = parseInt(approvedCount.textContent) + 1;
-                        }, 400);
+                        }, 600);
                     } else {
+                        if(btn) {
+                            btn.innerHTML = originalBtnHtml;
+                            btn.disabled = false;
+                        }
                         alert('❌ Error: ' + (data.message || 'Unknown error'));
                     }
                 })
                 .catch(error => {
+                    if(btn) {
+                        btn.innerHTML = originalBtnHtml;
+                        btn.disabled = false;
+                    }
                     console.error('Error:', error);
                     alert('❌ Error: ' + error.message);
                 });
@@ -1143,7 +1264,14 @@ session_start();
             if (reason === null) return;
 
             const card = document.getElementById('leave-card-' + leaveId);
+            const btn = card?.querySelector('.leave-action-btn.reject');
             if (!card) return;
+
+            const originalBtnHtml = btn ? btn.innerHTML : '';
+            if(btn) {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                btn.disabled = true;
+            }
 
             fetch('reject_leave.php', {
                 method: 'POST',
@@ -1153,9 +1281,9 @@ session_start();
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        card.style.transition = 'all 0.4s ease';
+                        card.style.transition = 'all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
                         card.style.opacity = '0';
-                        card.style.transform = 'translateX(-100px)';
+                        card.style.transform = 'scale(0.8) perspective(1000px) rotateX(20deg)';
 
                         setTimeout(() => {
                             card.remove();
@@ -1169,15 +1297,22 @@ session_start();
 
                             alert('✅ Leave request rejected!');
 
-                            // Increment Rejected Today counter
                             const rejectedCount = document.getElementById('rejectedCount');
                             rejectedCount.textContent = parseInt(rejectedCount.textContent) + 1;
-                        }, 400);
+                        }, 600);
                     } else {
+                        if(btn) {
+                            btn.innerHTML = originalBtnHtml;
+                            btn.disabled = false;
+                        }
                         alert('❌ Error: ' + (data.message || 'Unknown error'));
                     }
                 })
                 .catch(error => {
+                    if(btn) {
+                        btn.innerHTML = originalBtnHtml;
+                        btn.disabled = false;
+                    }
                     console.error('Error:', error);
                     alert('❌ Error: ' + error.message);
                 });
@@ -1240,12 +1375,15 @@ session_start();
                     }
 
                     const balances = data.leave_balance;
+                    currentlySelectedEmployeeBalances = balances;
                     let html = '';
 
                     const types = [
                         { key: 'annual', label: 'Annual', icon: 'fa-calendar-alt' },
                         { key: 'sick', label: 'Sick', icon: 'fa-briefcase-medical' },
-                        { key: 'emergency', label: 'Emergency', icon: 'fa-exclamation-triangle' }
+                        { key: 'emergency', label: 'Emergency', icon: 'fa-exclamation-triangle' },
+                        { key: 'marriage', label: 'Marriage', icon: 'fa-heart' },
+                        { key: 'bereavement', label: 'Bereavement', icon: 'fa-dove' }
                     ];
 
                     types.forEach(type => {

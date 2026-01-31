@@ -79,7 +79,7 @@ try {
     $stmt->close();
 
     // 4. Update leave entitlement balance
-    $valid_types = ['annual', 'sick', 'maternity', 'paternity', 'emergency'];
+    $valid_types = ['annual', 'sick', 'maternity', 'paternity', 'emergency', 'marriage', 'bereavement'];
     if (!in_array($type, $valid_types)) {
         throw new Exception("Invalid leave type: " . $type);
     }
@@ -89,7 +89,9 @@ try {
         'sick' => 'used_sick_leave',
         'maternity' => 'used_maternity_leave',
         'paternity' => 'used_paternity_leave',
-        'emergency' => 'used_emergency_leave'
+        'emergency' => 'used_emergency_leave',
+        'marriage' => 'used_marriage_leave',
+        'bereavement' => 'used_bereavement_leave'
     ];
     $used_column = $column_map[$type];
     $stmt = $conn->prepare("UPDATE leave_entitlements SET $used_column = $used_column + ? WHERE employee_id = ? AND year = ?");

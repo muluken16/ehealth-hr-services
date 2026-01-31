@@ -110,23 +110,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $current_date = new DateTime();
             $years_of_service = $current_date->diff($join_date)->y;
 
-            // Calculate entitlements
-            $annual_leave = 21;
-            if ($years_of_service >= 5)
-                $annual_leave += 2;
-            if ($years_of_service >= 10)
-                $annual_leave += 2;
-            if ($years_of_service >= 15)
-                $annual_leave += 3;
-            if ($years_of_service >= 20)
-                $annual_leave += 2;
+            // Calculate entitlements based on Ethiopian Labor Rules
+            $annual_leave = 16;
+            if ($years_of_service >= 2) {
+                $annual_leave += floor($years_of_service / 2);
+            }
 
             $maternity_days = ($employee['gender'] === 'female') ? 120 : 0;
-            $paternity_days = ($employee['gender'] === 'male') ? 10 : 0;
+            $paternity_days = ($employee['gender'] === 'male') ? 3 : 0;
+            $sick_days = 180;
+            $emergency_days = 3;
+            $marriage_days = 3;
+            $bereavement_days = 3;
 
             // Create entitlement record
-            $create_entitlement = $conn->prepare("INSERT INTO leave_entitlements (employee_id, year, annual_leave_days, sick_leave_days, maternity_leave_days, paternity_leave_days, emergency_leave_days) VALUES (?, ?, ?, 14, ?, ?, 5)");
-            $create_entitlement->bind_param("siiii", $employee_id, $current_year, $annual_leave, $maternity_days, $paternity_days);
+            $create_entitlement = $conn->prepare("INSERT INTO leave_entitlements (employee_id, year, annual_leave_days, sick_leave_days, maternity_leave_days, paternity_leave_days, emergency_leave_days, marriage_leave_days, bereavement_leave_days) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $create_entitlement->bind_param("siiiiiiii", $employee_id, $current_year, $annual_leave, $sick_days, $maternity_days, $paternity_days, $emergency_days, $marriage_days, $bereavement_days);
             $create_entitlement->execute();
             $create_entitlement->close();
 
@@ -142,7 +141,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             'sick' => 'sick_leave_days',
             'maternity' => 'maternity_leave_days',
             'paternity' => 'paternity_leave_days',
-            'emergency' => 'emergency_leave_days'
+            'emergency' => 'emergency_leave_days',
+            'marriage' => 'marriage_leave_days',
+            'bereavement' => 'bereavement_leave_days'
         ];
 
         $used_field_map = [
@@ -150,7 +151,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             'sick' => 'used_sick_leave',
             'maternity' => 'used_maternity_leave',
             'paternity' => 'used_paternity_leave',
-            'emergency' => 'used_emergency_leave'
+            'emergency' => 'used_emergency_leave',
+            'marriage' => 'used_marriage_leave',
+            'bereavement' => 'used_bereavement_leave'
         ];
 
         if (isset($field_map[$leave_type])) {
@@ -563,6 +566,9 @@ while ($row = $employees_result->fetch_assoc()) {
                                 <option value="maternity">Maternity Leave</option>
                                 <option value="paternity">Paternity Leave</option>
                                 <option value="emergency">Emergency Leave</option>
+                                <option value="marriage">Marriage Leave</option>
+                                <option value="bereavement">Bereavement Leave</option>
+                                <option value="special">Special (Unpaid) Leave</option>
                             </select>
                         </div>
 
@@ -579,7 +585,7 @@ while ($row = $employees_result->fetch_assoc()) {
                             </div>
                         </div>
 
-                        <div id="days_display" class="days-display" style="display: none;">
+                        <div id="days_display" class="days-display" style="display: none; padding: 20px; border-width: 3px; font-size: 16px; min-height: 60px; transition: 0.3s; box-shadow: 0 4px 15px rgba(39, 174, 96, 0.15);">
                             <i class="fas fa-calendar-alt"></i> Total Days: <span id="total_days">0</span>
                         </div>
 
@@ -660,9 +666,12 @@ while ($row = $employees_result->fetch_assoc()) {
                 'sick': 'Sick Leave',
                 'maternity': 'Maternity Leave',
                 'paternity': 'Paternity Leave',
-                'emergency': 'Emergency Leave'
+                'emergency': 'Emergency Leave',
+                'marriage': 'Marriage Leave',
+                'bereavement': 'Bereavement Leave'
             };
 
+            leaveTypes.push('marriage', 'bereavement');
             leaveTypes.forEach(type => {
                 const balance = data.leave_balance[type];
 
@@ -732,21 +741,44 @@ while ($row = $employees_result->fetch_assoc()) {
             }
         }
 
-        // Calculate days when dates change
-        function calculateDays() {
-            const startDate = document.getElementById('start_date').value;
-            const endDate = document.getElementById('end_date').value;
+        // Calculate net working days (Exclude Sundays & Holidays)
+        const ET_HOLIDAYS = [
+            '2026-01-07', '2026-01-19', '2026-03-02', '2026-05-01', '2026-05-05', 
+            '2026-09-11', '2026-09-27'
+        ];
 
-            if (startDate && endDate) {
-                const start = new Date(startDate);
-                const end = new Date(endDate);
+        function calculateDays() {
+            const startDateStr = document.getElementById('start_date').value;
+            const endDateStr = document.getElementById('end_date').value;
+
+            if (startDateStr && endDateStr) {
+                const start = new Date(startDateStr);
+                const end = new Date(endDateStr);
 
                 if (end >= start) {
-                    const timeDiff = end.getTime() - start.getTime();
-                    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+                    let net = 0;
+                    let excluded = 0;
+                    let cur = new Date(start);
+                    
+                    while (cur <= end) {
+                        const day = cur.getDay(); 
+                        const iso = cur.toISOString().split('T')[0];
+                        if (day === 0 || ET_HOLIDAYS.includes(iso)) {
+                            excluded++;
+                        } else {
+                            net++;
+                        }
+                        cur.setDate(cur.getDate() + 1);
+                    }
 
-                    document.getElementById('total_days').textContent = daysDiff;
+                    document.getElementById('total_days').textContent = net;
                     document.getElementById('days_display').style.display = 'block';
+                    document.getElementById('days_display').innerHTML = `
+                        <div style="display:flex; flex-direction:column; gap:4px;">
+                            <div style="font-weight:800; font-size:18px;"><i class="fas fa-calendar-check"></i> ${net} Net Working Days</div>
+                            <div style="font-size:11px; opacity:0.8;">Excluded: ${excluded} Sundays/Holidays</div>
+                        </div>
+                    `;
                 } else {
                     document.getElementById('days_display').style.display = 'none';
                 }

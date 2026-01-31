@@ -2,13 +2,17 @@
 session_start();
 header('Content-Type: application/json');
 
-include '../db.php';
+require_once dirname(__DIR__) . '/db.php';
 $conn = getDBConnection();
+
+// Set error reporting for JSON responses
+error_reporting(0);
+ini_set('display_errors', 0);
 
 $data = json_decode(file_get_contents('php://input'), true);
 
 if (!$data || !isset($data['employee_id']) || !isset($data['leave_type'])) {
-    echo json_encode(['success' => false, 'message' => 'Invalid data provided']);
+    echo json_encode(['success' => false, 'message' => 'Invalid data provided or empty request body']);
     exit;
 }
 

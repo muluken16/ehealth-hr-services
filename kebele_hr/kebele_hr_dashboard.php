@@ -17,6 +17,23 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../style/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        .leave-requests {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        @media (max-width: 1200px) {
+            .leave-requests {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 768px) {
+            .leave-requests {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -77,7 +94,7 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
                             <i class="fas fa-calendar-check"></i>
                         </div>
                         <div class="hr-stat-info">
-                            <h3>94%</h3>
+                            <h3 id="attendanceRate">0%</h3>
                             <p>Attendance Rate</p>
                         </div>
                     </div>
@@ -302,93 +319,10 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
                             </button>
                         </div>
                     </div>
-                    <div class="hr-section-body">
-                        <div class="leave-requests">
-                            <div class="leave-request-card">
-                                <div class="leave-header">
-                                    <div class="leave-employee">
-                                        <div class="employee-avatar">SJ</div>
-                                        <div>
-                                            <div class="employee-name">Dr. Sarah Johnson</div>
-                                            <div class="employee-id">Medical Department</div>
-                                        </div>
-                                    </div>
-                                    <div class="leave-type">Annual Leave</div>
-                                </div>
-                                <div class="leave-dates">
-                                    <div class="leave-date">
-                                        <div class="leave-date-label">From</div>
-                                        <div class="leave-date-value">15 Dec 2023</div>
-                                    </div>
-                                    <div class="leave-date">
-                                        <div class="leave-date-label">To</div>
-                                        <div class="leave-date-value">22 Dec 2023</div>
-                                    </div>
-                                </div>
-                                <p style="margin-bottom: 15px; color: var(--gray);">Family vacation planned for the
-                                    holidays.</p>
-                                <div class="leave-actions">
-                                    <button class="leave-action-btn approve">Approve</button>
-                                    <button class="leave-action-btn reject">Reject</button>
-                                </div>
-                            </div>
-
-                            <div class="leave-request-card">
-                                <div class="leave-header">
-                                    <div class="leave-employee">
-                                        <div class="employee-avatar">MC</div>
-                                        <div>
-                                            <div class="employee-name">Dr. Michael Chen</div>
-                                            <div class="employee-id">Cardiology</div>
-                                        </div>
-                                    </div>
-                                    <div class="leave-type">Sick Leave</div>
-                                </div>
-                                <div class="leave-dates">
-                                    <div class="leave-date">
-                                        <div class="leave-date-label">From</div>
-                                        <div class="leave-date-value">10 Dec 2023</div>
-                                    </div>
-                                    <div class="leave-date">
-                                        <div class="leave-date-label">To</div>
-                                        <div class="leave-date-value">12 Dec 2023</div>
-                                    </div>
-                                </div>
-                                <p style="margin-bottom: 15px; color: var(--gray);">Medical certificate attached for
-                                    flu.</p>
-                                <div class="leave-actions">
-                                    <button class="leave-action-btn approve">Approve</button>
-                                    <button class="leave-action-btn reject">Reject</button>
-                                </div>
-                            </div>
-
-                            <div class="leave-request-card">
-                                <div class="leave-header">
-                                    <div class="leave-employee">
-                                        <div class="employee-avatar">LB</div>
-                                        <div>
-                                            <div class="employee-name">Lisa Brown</div>
-                                            <div class="employee-id">Lab Technician</div>
-                                        </div>
-                                    </div>
-                                    <div class="leave-type">Maternity Leave</div>
-                                </div>
-                                <div class="leave-dates">
-                                    <div class="leave-date">
-                                        <div class="leave-date-label">From</div>
-                                        <div class="leave-date-value">01 Jan 2024</div>
-                                    </div>
-                                    <div class="leave-date">
-                                        <div class="leave-date-label">To</div>
-                                        <div class="leave-date-value">01 Apr 2024</div>
-                                    </div>
-                                </div>
-                                <p style="margin-bottom: 15px; color: var(--gray);">Expected due date in December.</p>
-                                <div class="leave-actions">
-                                    <button class="leave-action-btn approve">Approve</button>
-                                    <button class="leave-action-btn reject">Reject</button>
-                                </div>
-                            </div>
+                    <div class="hr-section-body" id="leaveRequestsContainer">
+                        <div class="loading-state" style="text-align: center; padding: 40px;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--primary);"></i>
+                            <p style="margin-top: 10px; color: var(--gray);">Loading pending requests...</p>
                         </div>
                     </div>
                 </div>
@@ -845,6 +779,7 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
             // Load Data
             loadGlobalStats();
             loadEmployees();
+            loadPendingLeaveRequests();
             loadAllCharts();
         });
 
@@ -871,7 +806,7 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
                         if (document.getElementById('totalEmployees')) document.getElementById('totalEmployees').textContent = data.stats.total_employees;
                         if (document.getElementById('openPositions')) document.getElementById('openPositions').textContent = data.stats.open_positions;
                         if (document.getElementById('onLeave')) document.getElementById('onLeave').textContent = data.stats.on_leave;
-                        if (document.getElementById('attendanceRate')) document.getElementById('attendanceRate').parentNode.querySelector('h3').textContent = data.stats.attendance_rate + '%';
+                        if (document.getElementById('attendanceRate')) document.getElementById('attendanceRate').textContent = data.stats.attendance_rate + '%';
                         if (document.getElementById('pendingLeaveCount')) document.getElementById('pendingLeaveCount').textContent = data.stats.pending_leave + ' pending';
                     }
                 });
@@ -993,6 +928,115 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['role'])) {
                     data: { labels: Object.keys(d.data), datasets: [{ data: Object.values(d.data), backgroundColor: ['#28a745', '#ffc107', '#dc3545'], borderWidth: 0 }] },
                     options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Employment Status' }, legend: { position: 'bottom' } } }
                 });
+            });
+        }
+
+        function loadPendingLeaveRequests() {
+            const container = document.getElementById('leaveRequestsContainer');
+            if (!container) return;
+
+            fetch('get_kebele_hr_leave_requests.php')
+                .then(response => response.json())
+                .then(data => {
+                    container.innerHTML = '';
+                    
+                    if (data.length === 0) {
+                        container.innerHTML = `
+                            <div style="text-align: center; padding: 40px; color: var(--gray);">
+                                <i class="fas fa-check-circle" style="font-size: 3rem; color: #10b981; margin-bottom: 15px;"></i>
+                                <p>All leave requests are cleared!</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    const requestsHtml = data.slice(0, 6).map(request => {
+                        const leaveType = request.leave_type || 'annual';
+                        const initials = (request.first_name?.[0] || '') + (request.last_name?.[0] || '');
+                        
+                        return `
+                            <div class="leave-request-card" id="row-leave-${request.id}" style="margin-bottom: 20px;">
+                                <div class="leave-header">
+                                    <div class="leave-employee">
+                                        <div class="employee-avatar">${initials}</div>
+                                        <div>
+                                            <div class="employee-name">${request.first_name} ${request.last_name}</div>
+                                            <div class="employee-id">${request.department || 'N/A'}</div>
+                                        </div>
+                                    </div>
+                                    <div class="leave-type" style="background: var(--primary-light); color: var(--primary); padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">
+                                        ${leaveType}
+                                    </div>
+                                </div>
+                                <div class="leave-dates" style="display: flex; gap: 20px; margin: 15px 0;">
+                                    <div class="leave-date">
+                                        <div class="leave-date-label" style="font-size: 0.7rem; color: var(--gray); text-transform: uppercase;">From</div>
+                                        <div class="leave-date-value" style="font-weight: 700;">${new Date(request.start_date).toLocaleDateString('en-US', {day:'2-digit', month:'short'})}</div>
+                                    </div>
+                                    <div class="leave-date">
+                                        <div class="leave-date-label" style="font-size: 0.7rem; color: var(--gray); text-transform: uppercase;">To</div>
+                                        <div class="leave-date-value" style="font-weight: 700;">${new Date(request.end_date).toLocaleDateString('en-US', {day:'2-digit', month:'short'})}</div>
+                                    </div>
+                                    <div class="leave-date">
+                                        <div class="leave-date-label" style="font-size: 0.7rem; color: var(--gray); text-transform: uppercase;">Net</div>
+                                        <div class="leave-date-value" style="font-weight: 700; color: var(--primary);">${request.days_requested} Days</div>
+                                    </div>
+                                </div>
+                                <p style="margin-bottom: 15px; color: var(--gray); font-size: 0.9rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                    ${request.reason || 'No reason provided.'}
+                                </p>
+                                <div class="leave-actions" style="display: flex; gap: 10px;">
+                                    <button class="leave-action-btn approve" onclick="approveDashboardLeave(${request.id}, '${request.first_name} ${request.last_name}')" style="flex: 1; padding: 10px; border: none; border-radius: 8px; background: #10b981; color: white; cursor: pointer; font-weight: 600;">Approve</button>
+                                    <button class="leave-action-btn reject" onclick="rejectDashboardLeave(${request.id}, '${request.first_name} ${request.last_name}')" style="flex: 1; padding: 10px; border: none; border-radius: 8px; background: #ef4444; color: white; cursor: pointer; font-weight: 600;">Reject</button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    container.innerHTML = `<div class="leave-requests">${requestsHtml}</div>`;
+                });
+        }
+
+        function approveDashboardLeave(id, name) {
+            if(!confirm(`Approve leave for ${name}?`)) return;
+            fetch('approve_leave.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({leave_id: id})
+            }).then(r => r.json()).then(res => {
+                if(res.success) {
+                    const el = document.getElementById(`row-leave-${id}`);
+                    el.style.opacity = '0';
+                    el.style.transform = 'scale(0.9)';
+                    setTimeout(() => {
+                        loadPendingLeaveRequests();
+                        loadGlobalStats();
+                    }, 400);
+                } else {
+                    alert(res.message);
+                }
+            });
+        }
+
+        function rejectDashboardLeave(id, name) {
+            const reason = prompt(`Reason for rejecting ${name}'s leave:`);
+            if(reason === null) return;
+            fetch('reject_leave.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({leave_id: id, reason: reason || 'Rejected via Dashboard'})
+            }).then(r => r.json()).then(res => {
+                if(res.success) {
+                    const el = document.getElementById(`row-leave-${id}`);
+                    el.style.opacity = '0';
+                    el.style.transform = 'scale(0.9)';
+                    setTimeout(() => {
+                        loadPendingLeaveRequests();
+                        loadGlobalStats();
+                    }, 400);
+                } else {
+                    alert(res.message);
+                }
             });
         }
     </script>

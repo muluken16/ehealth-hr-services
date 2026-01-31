@@ -18,7 +18,24 @@ $required_fields = [
     'national_id_details' => 'TEXT',
     'credit_status' => "VARCHAR(50) DEFAULT 'good'",
     'credit_details' => 'TEXT',
-    'fin_scan' => 'VARCHAR(255)'
+    'fin_scan' => 'VARCHAR(255)',
+    'loan_lender' => 'VARCHAR(255)',
+    'loan_type' => 'VARCHAR(100)',
+    'loan_amount' => 'DECIMAL(15,2) DEFAULT 0',
+    'remaining_balance' => 'DECIMAL(15,2) DEFAULT 0',
+    'monthly_payment' => 'DECIMAL(15,2) DEFAULT 0',
+    'loan_end_date' => 'DATE',
+    'loan_purpose' => 'TEXT',
+    'person_relationship' => 'VARCHAR(100)',
+    'warranty_amount' => 'DECIMAL(15,2) DEFAULT 0',
+    'warranty_start_date' => 'DATE',
+    'warranty_end_date' => 'DATE',
+    'warranty_court_status' => "VARCHAR(50) DEFAULT 'clean'",
+    'criminal_type' => 'VARCHAR(255)',
+    'criminal_date' => 'DATE',
+    'criminal_court' => 'VARCHAR(255)',
+    'criminal_sentence' => 'VARCHAR(255)',
+    'criminal_status_current' => 'VARCHAR(50)'
 ];
 
 echo "Checking for missing fields...\n";

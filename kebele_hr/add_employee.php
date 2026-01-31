@@ -179,6 +179,38 @@ if (!isset($_SESSION['user_name'])) {
             background: #f8fafc;
         }
 
+        .btn-clear-files {
+            background: #fef2f2;
+            color: #ef4444;
+            border: 1px solid #fee2e2;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+
+        .btn-clear-files:hover {
+            background: #fee2e2;
+        }
+
+        .file-item-preview {
+            background: #f1f5f9;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #475569;
+            font-size: 0.85rem;
+        }
+
         .form-control-edit:focus {
             outline: none;
             border-color: var(--primary);
@@ -556,6 +588,16 @@ if (!isset($_SESSION['user_name'])) {
                                         <div id="fin_list"
                                             style="margin-top: 10px; font-size: 0.8rem; color: var(--secondary);"></div>
                                     </div>
+                                    <div class="form-group">
+                                        <label>Employment Agreements / Contracts</label>
+                                        <div class="upload-area" onclick="document.getElementById('contract_input').click()">
+                                            <i class="fas fa-file-contract"></i> Select Contract(s)
+                                            <input type="file" id="contract_input" name="employment_agreements[]" multiple
+                                                style="display:none" onchange="handleFileList(this, 'contract_list')">
+                                        </div>
+                                        <div id="contract_list"
+                                            style="margin-top: 10px; font-size: 0.8rem; color: var(--secondary);"></div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -636,8 +678,7 @@ if (!isset($_SESSION['user_name'])) {
                                         <label>Bank Name</label>
                                         <select name="bank_name" class="form-control-edit">
                                             <option value="">Select Bank</option>
-                                            <option value="Commercial Bank of Ethiopia">Commercial Bank of Ethiopia
-                                            </option>
+                                            <option value="Commercial Bank of Ethiopia">Commercial Bank of Ethiopia</option>
                                             <option value="Dashen Bank">Dashen Bank</option>
                                             <option value="Abyssinia Bank">Abyssinia Bank</option>
                                             <option value="other">Other</option>
@@ -645,40 +686,60 @@ if (!isset($_SESSION['user_name'])) {
                                     </div>
                                     <div class="form-group">
                                         <label>Account Number</label>
-                                        <input type="text" name="bank_account" class="form-control-edit"
-                                            placeholder="Account Number">
+                                        <input type="text" name="bank_account" class="form-control-edit" placeholder="Account Number">
                                     </div>
                                     <div class="form-group">
                                         <label>Credit Status</label>
-                                        <select name="credit_status" class="form-control-edit"
-                                            onchange="toggleCreditFile(this)">
+                                        <select name="credit_status" class="form-control-edit" onchange="toggleCreditFile(this)">
                                             <option value="good">Good / No Debt</option>
                                             <option value="active">Active Credit</option>
                                             <option value="bad">Bad / Default</option>
                                         </select>
                                     </div>
-                                    <div id="creditFileGroup" class="form-group"
-                                        style="display: none; grid-column: 1/-1;">
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                                            <div>
-                                                <label>Credit Status File(s) (Attached)</label>
-                                                <div class="upload-area"
-                                                    onclick="document.getElementById('loan_file_input').click()"
-                                                    style="padding: 10px;">
-                                                    <i class="fas fa-file-invoice-dollar"></i> Upload Credit Document(s)
-                                                    <input type="file" id="loan_file_input" name="loan_file[]" multiple
-                                                        accept=".pdf,image/*" style="display:none"
-                                                        onchange="handleFileList(this, 'loan_list')">
+                                    <div id="creditFileGroup" class="form-group" style="display: none; grid-column: 1/-1;">
+                                        <div style="background: #fffcf5; padding: 20px; border-radius: 12px; border: 1px solid #fef3c7;">
+                                            <div style="font-weight:700; color:#92400e; margin-bottom:15px;"><i class="fas fa-info-circle"></i> Active Loan Details</div>
+                                            <div class="form-grid" style="margin-bottom: 20px;">
+                                                <div class="form-group">
+                                                    <label>Lender</label>
+                                                    <input type="text" name="loan_lender" class="form-control-edit" placeholder="Bank or Organization">
                                                 </div>
-                                                <div id="loan_list"
-                                                    style="margin-top: 10px; font-size: 0.8rem; color: var(--secondary);">
+                                                <div class="form-group">
+                                                    <label>Loan Type</label>
+                                                    <input type="text" name="loan_type" class="form-control-edit" placeholder="e.g. Personal, Business">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Total Amount (ETB)</label>
+                                                    <input type="number" name="loan_amount" class="form-control-edit" placeholder="Full borrowed amount">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Remaining (ETB)</label>
+                                                    <input type="number" name="remaining_balance" class="form-control-edit" placeholder="Remaining balance">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Monthly Pay (ETB)</label>
+                                                    <input type="number" name="monthly_payment" class="form-control-edit" placeholder="Pay per month">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>End Date</label>
+                                                    <input type="date" name="loan_end_date" class="form-control-edit">
                                                 </div>
                                             </div>
-                                            <div>
-                                                <label>Credit Information / Details</label>
-                                                <textarea name="credit_details" class="form-control-edit"
-                                                    placeholder="Enter details about the active credit or loan..."
-                                                    style="height: 70px;"></textarea>
+                                            
+                                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                                                <div class="form-group">
+                                                    <label>Credit Information / Details</label>
+                                                    <textarea name="credit_details" class="form-control-edit" placeholder="General notes about the loan..." style="height: 100px;"></textarea>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Credit Status File(s) (Attached)</label>
+                                                    <div class="upload-area" onclick="document.getElementById('loan_file_input').click()" style="padding: 15px; border-style: dashed; background: white;">
+                                                        <i class="fas fa-file-invoice-dollar" style="font-size: 1.5rem; margin-bottom: 10px; color: #d97706;"></i>
+                                                        <div style="font-size: 0.9rem;">Upload Bank Letter, Agreement, etc.</div>
+                                                        <input type="file" id="loan_file_input" name="loan_file[]" multiple accept=".pdf,image/*" style="display:none" onchange="handleFileList(this, 'loan_list')">
+                                                    </div>
+                                                    <div id="loan_list" style="margin-top: 10px; font-size: 0.8rem; color: var(--secondary);"></div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -691,90 +752,141 @@ if (!isset($_SESSION['user_name'])) {
                                 <div class="form-grid">
                                     <div class="form-group" style="grid-column: 1 / -1;">
                                         <label>Warranty / Guarantor Required?</label>
-                                        <select name="warranty_status" class="form-control-edit"
-                                            onchange="toggleWarrantyFields(this)">
-                                            <option value="yes">Yes - Guarantor Required</option>
+                                        <select name="warranty_status" class="form-control-edit" onchange="toggleWarrantyFields(this)">
                                             <option value="no">No - Not Required</option>
+                                            <option value="yes">Yes - Guarantor Required</option>
                                         </select>
                                     </div>
 
-                                    <div id="warrantyFields" class="form-grid"
-                                        style="grid-column: 1 / -1; display: grid; margin-bottom: 0;">
-                                        <div class="form-group">
-                                            <label>Guarantor Name</label>
-                                            <input type="text" name="person_name" class="form-control-edit"
-                                                placeholder="Full Name">
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Guarantor Phone</label>
-                                            <input type="tel" name="phone" class="form-control-edit"
-                                                placeholder="+251...">
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Guarantor Woreda</label>
-                                            <input type="text" name="warranty_woreda" class="form-control-edit"
-                                                placeholder="Woreda">
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Guarantor Kebele</label>
-                                            <input type="text" name="warranty_kebele" class="form-control-edit"
-                                                placeholder="Kebele">
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Warranty Agreement Document(s)</label>
-                                            <div class="upload-area"
-                                                onclick="document.getElementById('warranty_file').click()">
-                                                <i class="fas fa-paperclip"></i> Upload Agreement(s)
-                                                <input type="file" id="warranty_file" name="scan_file[]" multiple
-                                                    style="display:none"
-                                                    onchange="handleFileList(this, 'warranty_list')">
+                                    <div id="warrantyFields" class="form-grid" style="grid-column: 1 / -1; display: none; margin-bottom: 0;">
+                                        <div style="grid-column: 1/-1; background: #f0fdfa; padding: 20px; border-radius: 12px; border: 1px solid #ccfbf1;">
+                                            <div style="font-weight:700; color:#0f766e; margin-bottom:15px;"><i class="fas fa-user-shield"></i> Guarantor Information</div>
+                                            <div class="form-grid">
+                                                <div class="form-group">
+                                                    <label>Guarantor Name</label>
+                                                    <input type="text" name="person_name" class="form-control-edit" placeholder="Full Name">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Guarantor Phone</label>
+                                                    <input type="tel" name="phone" class="form-control-edit" placeholder="+251...">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Guarantor Woreda</label>
+                                                    <input type="text" name="warranty_woreda" class="form-control-edit" placeholder="Woreda">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Guarantor Kebele</label>
+                                                    <input type="text" name="warranty_kebele" class="form-control-edit" placeholder="Kebele">
+                                                </div>
                                             </div>
-                                            <div id="warranty_list"
-                                                style="margin-top: 10px; font-size: 0.8rem; color: var(--secondary);">
+
+                                            <div style="font-weight:700; color:#0f766e; margin: 20px 0 15px;"><i class="fas fa-id-card"></i> Additional ID Details</div>
+                                            <div class="form-grid">
+                                                <div class="form-group">
+                                                    <label>Relationship</label>
+                                                    <input type="text" name="person_relationship" class="form-control-edit" placeholder="e.g. Brother, Friend">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>National ID (FIN)</label>
+                                                    <input type="text" name="fin_id" class="form-control-edit" placeholder="ID Number">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Court Status</label>
+                                                    <select name="warranty_court_status" class="form-control-edit">
+                                                        <option value="clean">CLEAN</option>
+                                                        <option value="has_record">HAS RECORD</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Additional ID Notes</label>
+                                                    <input type="text" name="national_id_details" class="form-control-edit" placeholder="Any extra ID details">
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Additional ID Details</label>
-                                            <input type="text" name="national_id_details" class="form-control-edit"
-                                                placeholder="Guarantor ID info, etc.">
+
+                                            <div style="font-weight:700; color:#0f766e; margin: 20px 0 15px;"><i class="fas fa-file-contract"></i> Warranty Terms</div>
+                                            <div class="form-grid">
+                                                <div class="form-group">
+                                                    <label>Type</label>
+                                                    <input type="text" name="warranty_type" class="form-control-edit" placeholder="e.g. Property, Person">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Amount / Value (ETB)</label>
+                                                    <input type="number" name="warranty_amount" class="form-control-edit" placeholder="Value">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Start Date</label>
+                                                    <input type="date" name="warranty_start_date" class="form-control-edit">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Expiry Date</label>
+                                                    <input type="date" name="warranty_end_date" class="form-control-edit">
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group" style="margin-top:20px;">
+                                                <label>Warranty Agreement Document(s)</label>
+                                                <div class="upload-area" onclick="document.getElementById('warranty_file').click()" style="padding: 15px; border-style: dashed; background: white;">
+                                                    <i class="fas fa-paperclip" style="font-size: 1.5rem; margin-bottom: 10px; color: #0891b2;"></i>
+                                                    <div style="font-size: 0.9rem;">Upload Agreement Documents</div>
+                                                    <input type="file" id="warranty_file" name="scan_file[]" multiple style="display:none" onchange="handleFileList(this, 'warranty_list')">
+                                                </div>
+                                                <div id="warranty_list" style="margin-top: 10px; font-size: 0.8rem; color: var(--secondary);"></div>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div class="form-group" style="grid-column: 1 / -1; margin-top: 20px;">
-                                        <div
-                                            style="font-weight: 600; color: var(--primary); margin-bottom: 15px; border-top: 1px solid #f1f5f9; padding-top: 15px;">
-                                            Legal & Criminal Status</div>
+                                    <div class="form-group" style="grid-column: 1 / -1; margin-top: 20px; border-top: 1px solid #f1f5f9; padding-top: 20px;">
+                                        <div style="font-weight: 700; color: var(--primary); margin-bottom: 15px;"><i class="fas fa-gavel"></i> Legal & Criminal Status</div>
                                     </div>
                                     <div class="form-group">
-                                        <label>Criminal Record Status</label>
-                                        <select name="criminal_status" class="form-control-edit"
-                                            onchange="toggleCriminalFile(this)">
+                                        <label>Criminal Status</label>
+                                        <select name="criminal_status" class="form-control-edit" onchange="toggleCriminalFile(this)">
                                             <option value="no">Clean</option>
                                             <option value="yes">Has Record</option>
                                         </select>
                                     </div>
-                                    <div id="criminalFileGroup" class="form-group"
-                                        style="display: none; grid-column: 1/-1;">
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                                            <div>
-                                                <label>Criminal Record File(s) (Photo/Scan)</label>
-                                                <div class="upload-area"
-                                                    onclick="document.getElementById('criminal_file_input').click()"
-                                                    style="padding: 10px;">
-                                                    <i class="fas fa-balance-scale"></i> Upload Criminal Document(s)
-                                                    <input type="file" id="criminal_file_input" name="criminal_file[]"
-                                                        multiple accept=".pdf,image/*" style="display:none"
-                                                        onchange="handleFileList(this, 'criminal_list')">
+                                    <div id="criminalFileGroup" class="form-group" style="display: none; grid-column: 1/-1;">
+                                        <div style="background: #fef2f2; padding: 20px; border-radius: 12px; border: 1px solid #fee2e2;">
+                                            <div style="font-weight:700; color:#b91c1c; margin-bottom:15px;"><i class="fas fa-balance-scale"></i> Case Information</div>
+                                            <div class="form-grid">
+                                                <div class="form-group">
+                                                    <label>Type</label>
+                                                    <input type="text" name="criminal_type" class="form-control-edit" placeholder="Type of legal case">
                                                 </div>
-                                                <div id="criminal_list"
-                                                    style="margin-top: 10px; font-size: 0.8rem; color: var(--secondary);">
+                                                <div class="form-group">
+                                                    <label>Date</label>
+                                                    <input type="date" name="criminal_date" class="form-control-edit">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Court</label>
+                                                    <input type="text" name="criminal_court" class="form-control-edit" placeholder="Name of the court">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Sentence</label>
+                                                    <input type="text" name="criminal_sentence" class="form-control-edit" placeholder="Court decision">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Case Status</label>
+                                                    <select name="criminal_status_current" class="form-control-edit">
+                                                        <option value="">Select Status</option>
+                                                        <option value="Open">Open</option>
+                                                        <option value="Ongoing">Ongoing</option>
+                                                        <option value="Closed">Closed</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Notes</label>
+                                                    <textarea name="criminal_record_details" class="form-control-edit" placeholder="Any extra comments..." style="height: 38px;"></textarea>
                                                 </div>
                                             </div>
-                                            <div>
-                                                <label>Criminal Record Details</label>
-                                                <textarea name="criminal_record_details" class="form-control-edit"
-                                                    placeholder="Enter specific details about the record..."
-                                                    style="height: 70px;"></textarea>
+                                            <div class="form-group" style="margin-top:20px;">
+                                                <label>Case File(s) (Photo/Scan)</label>
+                                                <div class="upload-area" onclick="document.getElementById('criminal_file_input').click()" style="padding: 15px; border-style: dashed; background: white;">
+                                                    <i class="fas fa-file-alt" style="font-size: 1.5rem; margin-bottom: 10px; color: #dc2626;"></i>
+                                                    <div style="font-size: 0.9rem;">Upload Case Documents</div>
+                                                    <input type="file" id="criminal_file_input" name="criminal_file[]" multiple accept=".pdf,image/*" style="display:none" onchange="handleFileList(this, 'criminal_list')">
+                                                </div>
+                                                <div id="criminal_list" style="margin-top: 10px; font-size: 0.8rem; color: var(--secondary);"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -868,14 +980,24 @@ if (!isset($_SESSION['user_name'])) {
         function handleFileList(input, listId) {
             const list = document.getElementById(listId);
             list.innerHTML = '';
-            if (input.files) {
+            if (input.files && input.files.length > 0) {
+                const clearBtn = document.createElement('div');
+                clearBtn.innerHTML = `<button type="button" class="btn-clear-files" onclick="clearFileInput('${input.id}', '${listId}')"><i class="fas fa-times-circle"></i> Clear Selection</button>`;
+                list.appendChild(clearBtn);
+
                 Array.from(input.files).forEach(file => {
                     const div = document.createElement('div');
+                    div.className = 'file-item-preview';
                     div.innerHTML = `<i class="fas fa-file-alt"></i> ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
-                    div.style.marginBottom = '5px';
                     list.appendChild(div);
                 });
             }
+        }
+
+        function clearFileInput(inputId, listId) {
+            const input = document.getElementById(inputId);
+            input.value = '';
+            document.getElementById(listId).innerHTML = '';
         }
 
         // Locations handled by locations.js

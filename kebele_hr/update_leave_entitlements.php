@@ -20,6 +20,10 @@ $sick = intval($data['sick_leave_days']);
 $used_sick = intval($data['used_sick_leave']);
 $emergency = intval($data['emergency_leave_days']);
 $used_emergency = intval($data['used_emergency_leave']);
+$marriage = intval($data['marriage_leave_days'] ?? 3);
+$used_marriage = intval($data['used_marriage_leave'] ?? 0);
+$bereavement = intval($data['bereavement_leave_days'] ?? 3);
+$used_bereavement = intval($data['used_bereavement_leave'] ?? 0);
 $year = date('Y');
 
 try {
@@ -30,11 +34,15 @@ try {
             sick_leave_days = ?, 
             used_sick_leave = ?,
             emergency_leave_days = ?, 
-            used_emergency_leave = ?
+            used_emergency_leave = ?,
+            marriage_leave_days = ?,
+            used_marriage_leave = ?,
+            bereavement_leave_days = ?,
+            used_bereavement_leave = ?
             WHERE employee_id = ? AND year = ?";
 
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("iiiiiiiis", $annual, $carry, $used_annual, $sick, $used_sick, $emergency, $used_emergency, $employee_id, $year);
+    $stmt->bind_param("iiiiiiiiiiiss", $annual, $carry, $used_annual, $sick, $used_sick, $emergency, $used_emergency, $marriage, $used_marriage, $bereavement, $used_bereavement, $employee_id, $year);
 
     if ($stmt->execute()) {
         echo json_encode(['success' => true, 'message' => 'Entitlements updated successfully']);
